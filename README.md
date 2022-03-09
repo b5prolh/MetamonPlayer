@@ -1,6 +1,14 @@
 # MetamonPlayer
 Simple program to play Metamon automatically
 # Getting Started
+This program is converted from https://github.com/MetaMon-game-player/MetamonPlayer to add some functions:
+- Automatically up exp
+- Automatically up power
+- Display opponent metamon's attribute in stattus file
+- Create log to see battle record
+- Choose lowest metamon battle to increase win rate
+- Calculate power up rate success
+- Calculate opponent metamon crit times in each battle 
 
 [Radio Caca]
 
@@ -98,20 +106,20 @@ Message:
 	-br,--battle-record, 			Creating log for metamons battle
 	
 For example:
-- Simple Play mode:
-    paython metamon_play.py -e -s
 - Power up only mode:
-	 paython metamon_play.py -nb -powerup
+	 python metamon_play.py -nb -powerup
 - Exp up only mode:
-	 paython metamon_play.py -nb -expup
+	 python metamon_play.py -nb -expup
 - Exp and powerup:
-	paython metamon_play.py -nb -expup -powerup
-- Play with sorted metamon by attribute:
-	paython metamon_play.py -e -s -ofm
-- Play with lowest score metamon:
-	paython metamon_play.py -e -s -ls
-- Recommend using:
-	paython metamon_play.py -e -s -ls -br -powerup 	
+	python metamon_play.py -nb -expup -powerup
+- Play with metamon lowest score in rank:
+    python metamon_play.py -e -s	
+- Play with sorted metamon lowest attribute in rank (Score, luk, courage, stealth, wisdom, size):
+	python metamon_play.py -e -s -ofm
+- Play only one with lowest score metamon (metamon is hardcode id):
+	python metamon_play.py -e -s -ls
+- Play, Log battle, auto power up (Recommend using):
+	python metamon_play.py -e -s -ls -br -powerup 	
 	
 Will try to read file wallets.tsv in current dir,
 auto fight, mint eggs, and save stats to corresponding 
