@@ -88,7 +88,7 @@ To get familiar run metamon_player.py to get help
 
 Message:
     
-    usage: metamon_play.py [-h] [-i INPUT_TSV] [-nl] [-nb] [-e] [-s]
+    usage: metamon_play.py [-h] [-i INPUT_TSV] [-nl] [-nb] [-e] [-s] [-ofm] [-ls] [-expup] [-powerup] [-br]
 
     optional arguments:
     -h, --help            show this help message and exit
@@ -106,19 +106,32 @@ Message:
 	-br,--battle-record, 			Creating log for metamons battle
 	
 For example:
-- Power up only mode:
-	 python metamon_play.py -nb -powerup
-- Exp up only mode:
-	 python metamon_play.py -nb -expup
-- Exp and powerup:
+Power up only mode
+
+	python metamon_play.py -nb -powerup
+	
+Exp up only mode
+
+	python metamon_play.py -nb -expup
+	
+Exp and powerup
+
 	python metamon_play.py -nb -expup -powerup
-- Play with metamon lowest score in rank:
+	
+Play with metamon lowest score in rank
+
     python metamon_play.py -e -s	
-- Play with sorted metamon lowest attribute in rank (Score, luk, courage, stealth, wisdom, size):
+	
+Play with sorted metamon lowest attribute in rank (Score, luk, courage, stealth, wisdom, size)
+
 	python metamon_play.py -e -s -ofm
-- Play only one with lowest score metamon (metamon is hardcode id):
+	
+Play only one with lowest score metamon (metamon is hardcode id)
+
 	python metamon_play.py -e -s -ls
-- Play, Log battle, auto power up (Recommend using):
+	
+Play, Log battle, auto power up (Recommend using)
+
 	python metamon_play.py -e -s -ls -br -powerup 	
 	
 Will try to read file wallets.tsv in current dir,
@@ -137,3 +150,9 @@ obtaining one every day for battles)
 
 Hope you will have fun playing and this script will make it 
 a little bit less tedious. Enjoy!
+
+If you can please donate little bit raca or eggs to
+
+	0x3c27669094b8B7F7336376e256146DDa8E36ECe8 
+	
+Thanks
