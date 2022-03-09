@@ -102,10 +102,11 @@ Message:
 	-ofm, --other-fighting-mode, 	To select metamon have lowest Wisdom, Size, Luck, Courage, Stealth to play for more win
 	-ls, --lowest-score, 			To select metamon have lowest score by hardcode metamon id
 	-expup, --auto-exp-up, 			Automatically up exp for metamon before battle
-	-powerup, --auto-power-up, 		Automatically up power for metamon before battle
-	-br,--battle-record, 			Creating log for metamons battle
+	-powerup, --auto-power-up, 		Automatically up power for metamon before battle. Priority of attribute will be upgraded Courage < 50, Wisdom < 101, Size < 101, Stealth < 50 and Luck
+	-br,--battle-record, 			Watching record of each battle, Creating log after finish
 	
 For example:
+
 Power up only mode
 
 	python metamon_play.py -nb -powerup
@@ -114,9 +115,7 @@ Exp up only mode
 
 	python metamon_play.py -nb -expup
 	
-Exp and powerup
-
-	python metamon_play.py -nb -expup -powerup
+	<img src="screenshots/exp_up_only.png" />
 	
 Play with metamon lowest score in rank
 
@@ -151,7 +150,7 @@ obtaining one every day for battles)
 Hope you will have fun playing and this script will make it 
 a little bit less tedious. Enjoy!
 
-If you can please donate little bit raca or eggs to
+<b>If you can please donate little bit Raca or Eggs to</b> 
 
 	0x3c27669094b8B7F7336376e256146DDa8E36ECe8 
 	

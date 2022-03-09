@@ -99,7 +99,7 @@ def pick_battle_level(level=1):
 
 
 class MetamonPlayer:
-
+    
     def __init__(self,
                  address,
                  sign,
@@ -129,7 +129,8 @@ class MetamonPlayer:
         self.auto_exp_up = auto_exp_up,
         self.auto_power_up = auto_power_up,
         self.battle_record = battle_record,
-        self.rate = 0
+        self.rate = 0,
+        self.log_file = open("battle_record.log","w")
 
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
@@ -280,7 +281,7 @@ class MetamonPlayer:
             
             finalDame = record.get("monsterbLifelost")
             old_stdout = sys.stdout
-            log_file = open("battle_record.log","w")
+            
             sys.stdout = log_file
             
             if attackType == 0:
@@ -323,7 +324,7 @@ class MetamonPlayer:
         print(f"\nOpponent's crit: {opponent_crit_count} times in battle")
         
         sys.stdout = old_stdout
-        log_file.close()
+
         return opponent_crit_count
              
     def start_fight(self,
@@ -466,7 +467,7 @@ class MetamonPlayer:
             else:
                 fail += 1
                 self.total_fail += 1
-
+        self.log_file.close()
         mtm_stats.append({
             "TokenId": my_monster_token_id,
             "Race": my_race,
@@ -686,7 +687,7 @@ if __name__ == "__main__":
                         action="store_true", default=False)
     parser.add_argument("-powerup", "--auto-power-up", help="Automatically up power for metamon before battle",
                         action="store_true", default=False)
-    parser.add_argument("-br","--battle-record", help="Creating log for metamons battle",
+    parser.add_argument("-br","--battle-record", help="Watching record of each battle, Creating log after finish",
                         action="store_true", default=False)                        
                         
     args = parser.parse_args()
