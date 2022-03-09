@@ -1,5 +1,13 @@
 # MetamonPlayer
 Simple program to play Metamon automatically
+
+#Donate
+<b>If you can please donate little bit Raca or Eggs to</b> 
+
+	0x3c27669094b8B7F7336376e256146DDa8E36ECe8 
+	
+<b>THANK YOU SO MUCH</b> 
+
 # Getting Started
 This program is converted from https://github.com/MetaMon-game-player/MetamonPlayer to add some functions:
 - Automatically up exp
@@ -149,9 +157,3 @@ obtaining one every day for battles)
 
 Hope you will have fun playing and this script will make it 
 a little bit less tedious. Enjoy!
-
-<b>If you can please donate little bit Raca or Eggs to</b> 
-
-	0x3c27669094b8B7F7336376e256146DDa8E36ECe8 
-	
-<b>Thanks</b> 
