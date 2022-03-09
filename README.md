@@ -125,7 +125,7 @@ Play with sorted metamon lowest attribute in rank (Score, luk, courage, stealth,
 
 	python metamon_play.py -e -s -ofm
 	
-Play only one with lowest score metamon (metamon is hardcode id)
+Play only one lowest score metamon (metamon is hardcode id)
 
 	python metamon_play.py -e -s -ls
 	
@@ -154,4 +154,4 @@ a little bit less tedious. Enjoy!
 
 	0x3c27669094b8B7F7336376e256146DDa8E36ECe8 
 	
-Thanks
+<b>Thanks</b> 
