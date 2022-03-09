@@ -1,7 +1,7 @@
 # MetamonPlayer
-Simple program to play Metamon automatically
+Simple program to play Metamon automatically.
 
-#Donate
+# Donate
 <b>If you can please donate little bit Raca or Eggs to</b> 
 
 	0x3c27669094b8B7F7336376e256146DDa8E36ECe8 
