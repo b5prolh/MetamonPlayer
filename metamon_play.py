@@ -2,7 +2,6 @@ import argparse
 from tqdm import trange
 import requests
 import os
-import sys
 import csv
 import pandas as pd
 from time import sleep
@@ -76,16 +75,16 @@ def picker_battler(monsters_list, other_fighting_mode):
         battlers_sorted = sorted(battlers, key=itemgetter('sca','luk', 'crg', 'inv', 'con', 'inte'))
         battler = battlers[0]
         
-    my_monster_id = battler.get("id")
-    my_luk = battler.get("luk")
-    my_size = battler.get("con")
-    my_inte = battler.get("inte")
-    my_courage = battler.get("crg")
-    my_inv = battler.get("inv")
-    my_level = battler.get("level")
-    my_power = battler.get("sca")
-    my_race = battler.get("race")
-    print(f"Battle Monsters - ID: {my_monster_id}, Race:{my_race}, Score: {my_power}, Luk: {my_luk}, Wisdom: {my_inte}, Size: {my_size}, Courage: {my_courage}, Stealth: {my_inv}")
+    target_monster_id = battler.get("id")
+    target_luk = battler.get("luk")
+    target_size = battler.get("con")
+    target_inte = battler.get("inte")
+    target_courage = battler.get("crg")
+    target_inv = battler.get("inv")
+    target_level = battler.get("level")
+    target_power = battler.get("sca")
+    target_race = battler.get("race")
+    print(f"Battle Monsters - ID: {target_monster_id}, Race:{target_race}, Score: {target_power}, Luk: {target_luk}, Wisdom: {target_inte}, Size: {target_size}, Courage: {target_courage}, Stealth: {target_inv}")
     return battler
 
 
@@ -164,6 +163,7 @@ class MetamonPlayer:
             "accessToken": self.token,
             }
             response = post_formdata(payload, LIST_BATTLER_URL, headers)
+            print(f"{response}")
             return response.get("data", {}).get("objects")
         
         
@@ -257,12 +257,27 @@ class MetamonPlayer:
                        challenge_record,
                        challenge_monster,
                        my_monster_id,
+                       my_monster_token_id,
+                       my_monster_luk,
                        my_monster_size,
                        my_monster_inv,
                        my_monster_crg,
-                       my_monster_inte):
+                       my_monster_inte,
+                       old_stdout,
+                       maximum_length,
+                       game_count):
         count = 0
         opponent_crit_count = 0;
+        str_start = "*"
+        str_start_game =  f"START GAME {game_count}"
+        for i in range(maximum_length - len(str_start_game) - 3):
+            str_start = str_start + " "
+            count_temp = maximum_length/2 - len(str_start_game)
+            if count_temp == i:
+                str_start = str_start + str_start_game
+        str_start = str_start + " *"
+        print(f"{str_start}")    
+        
         for record in challenge_record:
 
             count += 1
@@ -275,14 +290,10 @@ class MetamonPlayer:
             attackType = record.get("attackType")
             defenceType = record.get("defenceType")
             monsteraLife = record.get("monsteraLife")
+            finalDame = record.get("monsterbLifelost")
             #monsterBLife = record.get("monsterbLife")
             attackTypeStr = ""
             defenceTypeStr = ""
-            
-            finalDame = record.get("monsterbLifelost")
-            old_stdout = sys.stdout
-            
-            sys.stdout = log_file
             
             if attackType == 0:
                attackTypeStr = "Wisdom"
@@ -291,10 +302,21 @@ class MetamonPlayer:
             if defenceTypeStr == 0:
                defenceTypeStr = "Courage"
             else:
-               defenceTypeStr = "Stealth"               
-            print(f"\n Turn {count} - Attack Attribute: {attackTypeStr}, Defence Attribute: {defenceTypeStr}")
+               defenceTypeStr = "Stealth"     
+               
+            attribute_random_info = f"* Turn {count}: Attack {attackTypeStr}, Defence {defenceTypeStr}"
+
+            for i in range(maximum_length - len(attribute_random_info) - 2):
+                attribute_random_info = attribute_random_info + " "
+            attribute_random_info = attribute_random_info + " *"
+            print(f"{attribute_random_info}")               
+
             if monsteraId == my_monster_id:
-                print(f"\n- My Metamon Fighting:    Health: {monsteraLife}, Final Dame = {finalDame}")
+                str_metamon_info = f"* My Metamon Fighting: Health {monsteraLife}, Final Dame = {finalDame}"
+                for i in range(maximum_length - len(str_metamon_info) - 2):
+                    str_metamon_info = str_metamon_info + " "
+                str_metamon_info_print = str_metamon_info + " *"
+                print(f"{str_metamon_info_print}")
                 if attackType == 0 and defenceType == 0:
                     if finalDame == (my_monster_inte - target_monster_crg*2) or finalDame == (my_monster_inte*2 - target_monster_crg*2):
                         opponent_crit_count += 1
@@ -308,7 +330,11 @@ class MetamonPlayer:
                     if finalDame == (my_monster_size - target_monster_inv*2) or finalDame == (my_monster_size*2 - target_monster_inv*2):
                         opponent_crit_count += 1                   
             else:
-                print(f"\n- Opponent's Metamon Fighting:   Health: {monsteraLife}, Final Dame = {finalDame}")
+                str_target_info = f"* Opponent's Metamon Fighting: Health {monsteraLife}, Final Dame = {finalDame}"
+                for i in range(maximum_length - len(str_target_info) - 2):
+                    str_target_info = str_target_info + " "
+                str_target_info = str_target_info + " *"               
+                print(f"{str_target_info}")
                 if attackType == 0 and defenceType == 0:
                     if finalDame == (target_monster_inte*2 - my_monster_crg) or finalDame == (target_monster_inte*2 - my_monster_crg*2):
                         opponent_crit_count += 1
@@ -321,10 +347,20 @@ class MetamonPlayer:
                 elif attackType == 1 and defenceType == 1:
                     if finalDame == (target_monster_size*2 - my_monster_inv) or finalDame == (target_monster_size*2 - my_monster_inv*2):
                         opponent_crit_count += 1
-        print(f"\nOpponent's crit: {opponent_crit_count} times in battle")
-        
-        sys.stdout = old_stdout
-
+        str_target_crit_count = f"* Opponent's crit: {opponent_crit_count} times in battle"
+        for i in range(maximum_length - len(str_target_crit_count) - 2):
+           str_target_crit_count = str_target_crit_count + " "
+        str_target_crit_count = str_target_crit_count + " *"               
+        print(f"{str_target_crit_count}") 
+        str_end = "*"
+        str_end_game = f"END GAME {game_count}"
+        for i in range(maximum_length - len(str_end_game) - 3):
+            str_end = str_end + " "
+            count_temp = maximum_length/2 - len(str_end_game)
+            if count_temp == i:
+                str_end = str_end + str_end_game
+        str_end = str_end + " *"
+        print(f"{str_end}\n") 
         return opponent_crit_count
              
     def start_fight(self,
@@ -411,7 +447,30 @@ class MetamonPlayer:
                 print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} unsuccesful")
 
         tbar.set_description("Fighting...")
-        
+
+        if self.battle_record[0] == True:
+            old_stdout = sys.stdout
+            sys.stdout = self.log_file
+            str_end = ""
+            maximum_length = 98
+            my_metamon_print = f"* My Metamon: ID {my_monster_token_id}, Luk {my_luk}, Wisdom {my_inte}, Size {my_size}, Courage {my_courage}, Stealth {my_inv} "
+            target_metamon_print = f"* Target Metamon: ID {target_monster_id}, Luk {target_monster_luk}, Wisdom {target_monster_inte}, Size {target_monster_size}, Courage {target_monster_crg}, Stealth {target_monster_inv} "
+            for i in range(maximum_length):
+                str_end = str_end + "*"
+            print(f"{str_end}")
+
+            if maximum_length - len(my_metamon_print) > 0:
+                for i in range(maximum_length - len(my_metamon_print) - 1):
+                    my_metamon_print = my_metamon_print + " "
+                my_metamon_print = my_metamon_print + "*"
+            print(f"{my_metamon_print}")
+            
+            if maximum_length - len(target_metamon_print) > 0:
+                for i in range(maximum_length - len(target_metamon_print) - 1):
+                    target_metamon_print = target_metamon_print + " "
+                target_metamon_print = target_metamon_print + "*"
+            print(f"{target_metamon_print}")            
+        game_count = 0
         for _ in tbar:
             payload = {
                 "monsterA": my_monster_id,
@@ -443,9 +502,10 @@ class MetamonPlayer:
             target_monster_inv = challenge_monster.get("inv")
             target_monster_sca = challenge_monster.get("sca")
             target_monster_race = challenge_monster.get("race")
-            opp_crit_count = 0           
-            if self.battle_record:
-                opp_crit_count = self.display_battle(challenge_record,challenge_monster, my_monster_id, my_size, my_inv, my_courage, my_inte)
+            opp_crit_count = 0
+            game_count +=1
+            if self.battle_record[0] == True:
+                opp_crit_count = self.display_battle(challenge_record,challenge_monster, my_monster_id, my_monster_token_id, my_luk, my_size, my_inv, my_courage, my_inte, old_stdout, maximum_length, game_count)
                 
             if self.auto_lvl_up:
                 # Try to lvl up
@@ -467,7 +527,12 @@ class MetamonPlayer:
             else:
                 fail += 1
                 self.total_fail += 1
-        self.log_file.close()
+        if self.battle_record[0] == True:
+            str_end = ""
+            for i in range(maximum_length):
+                str_end = str_end + "*"
+            print(f"{str_end}") 
+            sys.stdout = old_stdout
         mtm_stats.append({
             "TokenId": my_monster_token_id,
             "Race": my_race,
@@ -623,6 +688,7 @@ class MetamonPlayer:
             os.remove(back_fn)
         if self.output_stats:
             mtm_stats_df.to_csv(mtm_stats_file_name, sep="\t", index=False)
+        self.log_file.close()
 
     def mint_eggs(self):
         self.init_token()
@@ -717,7 +783,7 @@ if __name__ == "__main__":
                             lowest_score = lscore,
                             auto_exp_up = auto_expup,
                             auto_power_up = auto_powerup,
-                            battle_record = args.battle_record
+                            battle_record = args.battle_record,
                             output_stats=args.save_results)
 
         if not args.skip_battles:
