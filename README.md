@@ -120,6 +120,7 @@ Power up only mode
 	python metamon_play.py -nb -powerup
 	
 <img src="screenshots/power_up_only.png" />
+
 Exp up only mode
 
 	python metamon_play.py -nb -expup
@@ -148,7 +149,10 @@ Play, Log battle, auto power up (Recommend using if don't need up exp for metamo
 	
 Play only one lowest score metamon, auto power up, auto exp up
 
-	python metamon_play.py -e -s -ls -powerup -expup  	
+	python metamon_play.py -e -s -ls -powerup -expup  
+	
+Summary with up power rate
+<img src="screenshots/power_up_only.png" />
 	
 Will try to read file wallets.tsv in current dir,
 auto fight, mint eggs, and save stats to corresponding 
