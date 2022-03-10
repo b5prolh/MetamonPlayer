@@ -119,12 +119,12 @@ Power up only mode
 
 	python metamon_play.py -nb -powerup
 	
-	<img src="screenshots/power_up_only.png" />
+<img src="screenshots/power_up_only.png" />
 Exp up only mode
 
 	python metamon_play.py -nb -expup
 	
-	<img src="screenshots/exp_up_only.png" />
+<img src="screenshots/exp_up_only.png" />
 	
 Play with metamon lowest score in rank
 
@@ -142,9 +142,9 @@ Play, Log battle, auto power up (Recommend using if don't need up exp for metamo
 
 	python metamon_play.py -e -s -ls -br -powerup
 
-	<img src="screenshots/play_power_up.png" />
+<img src="screenshots/play_power_up.png" />
 	
-	<img src="screenshots/battle_record.png" />
+<img src="screenshots/battle_record.png" />
 	
 Play only one lowest score metamon, auto power up, auto exp up
 
