@@ -152,6 +152,7 @@ Play only one lowest score metamon, auto power up, auto exp up
 	python metamon_play.py -e -s -ls -powerup -expup  
 	
 Summary with up power rate
+
 <img src="screenshots/summary.png" />
 	
 Will try to read file wallets.tsv in current dir,
