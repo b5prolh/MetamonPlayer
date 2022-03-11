@@ -163,7 +163,7 @@ class MetamonPlayer:
             "accessToken": self.token,
             }
             response = post_formdata(payload, LIST_BATTLER_URL, headers)
-            print(f"{response}")
+
             return response.get("data", {}).get("objects")
         
         
