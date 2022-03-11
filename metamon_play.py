@@ -23,7 +23,7 @@ MINT_EGG_URL = f"{BASE_URL}/composeMonsterEgg"
 CHECK_BAG_URL = f"{BASE_URL}/checkBag"
 EXP_UP_URL = f"{BASE_URL}/expUpMonster"
 POWER_UP_URL = f"{BASE_URL}/addAttr"
-DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":97,"conMax":200,"crg":48,"crgMax":100,"id":"714892","inte":96,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"16","race":"demon","rarity":"N","sca":308,"tokenId":""}]}}'
+DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":95,"crg":48,"id":"643127","inte":95,"inv":48,"luk":19, "level":"16","race":"orc","rarity":"N","sca":305,"tokenId":""}]}}'
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -607,7 +607,7 @@ class MetamonPlayer:
         wallet_monsters = self.get_wallet_properties()
 
         available_monsters = [
-            monster for monster in wallet_monsters if monster.get("tear") > 0
+            monster for monster in wallet_monsters if monster.get("tear") > 0 and monster.get("exp") < 60 and monster.get("level") <=60
         ]
         stats_l = []
         print(f"Available Monsters : {len(available_monsters)}")
