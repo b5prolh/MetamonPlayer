@@ -607,7 +607,7 @@ class MetamonPlayer:
         wallet_monsters = self.get_wallet_properties()
 
         available_monsters = [
-            monster for monster in wallet_monsters if monster.get("tear") > 0 and monster.get("exp") < 60 and monster.get("level") <=60
+            monster for monster in wallet_monsters if monster.get("tear") > 0 and monster.get("exp") < 600 and monster.get("level") <=60
         ]
         stats_l = []
         print(f"Available Monsters : {len(available_monsters)}")
