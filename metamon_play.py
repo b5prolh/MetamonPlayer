@@ -703,7 +703,7 @@ class MetamonPlayer:
         check_bag_res = post_formdata(payload, CHECK_BAG_URL, headers)
         items = check_bag_res.get("data", {}).get("item")
         total_egg_fragments = 0
-        if (items == None):
+        if (items is None):
             print("GET ASSETS IN PACKAGE FAIL")
         else:
             for item in items:
