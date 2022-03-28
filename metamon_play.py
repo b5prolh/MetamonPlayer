@@ -23,7 +23,7 @@ MINT_EGG_URL = f"{BASE_URL}/composeMonsterEgg"
 CHECK_BAG_URL = f"{BASE_URL}/checkBag"
 EXP_UP_URL = f"{BASE_URL}/expUpMonster"
 POWER_UP_URL = f"{BASE_URL}/addAttr"
-DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":97,"conMax":200,"crg":48,"crgMax":100,"id":"714892","inte":96,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"16","race":"demon","rarity":"N","sca":308,"tokenId":""}]}}'
+DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":95,"conMax":200,"crg":48,"crgMax":100,"id":"920382","inte":95,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"40","race":"demon","rarity":"N","sca":305,"tokenId":""}]}}'
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -393,7 +393,7 @@ class MetamonPlayer:
         battle_level = pick_battle_level(my_level)
         tbar = trange(loop_count)
         
-        if  self.auto_exp_up[0] == True:    
+        if  self.auto_exp_up[0] == True and my_level > 43:    
             exp_up_response = self.exp_up(my_monster_id)
             while (exp_up_response.get("code") == "SUCCESS"):
                 data = exp_up_response.get("data")
@@ -607,7 +607,8 @@ class MetamonPlayer:
         wallet_monsters = self.get_wallet_properties()
 
         available_monsters = [
-            monster for monster in wallet_monsters if monster.get("tear") > 0 and monster.get("exp") < 600 and monster.get("level") <=60
+            #monster for monster in wallet_monsters if monster.get("tear") > 0 and monster.get("exp") < 600 and monster.get("level") <=60
+            monster for monster in wallet_monsters if monster.get("tear") > 0
         ]
         stats_l = []
         print(f"Available Monsters : {len(available_monsters)}")
@@ -702,26 +703,28 @@ class MetamonPlayer:
         check_bag_res = post_formdata(payload, CHECK_BAG_URL, headers)
         items = check_bag_res.get("data", {}).get("item")
         total_egg_fragments = 0
+        if (items == None):
+            print("GET ASSETS IN PACKAGE FAIL")
+        else:
+            for item in items:
+                if item.get("bpType") == 1:
+                    total_egg_fragments = item.get("bpNum")
+                    break
 
-        for item in items:
-            if item.get("bpType") == 1:
-                total_egg_fragments = item.get("bpNum")
-                break
+            total_egg = int(int(total_egg_fragments) / 1000)
 
-        total_egg = int(int(total_egg_fragments) / 1000)
+            if total_egg < 1:
+                print("You don't have enough egg fragments to mint")
+                return
 
-        if total_egg < 1:
-            print("You don't have enough egg fragments to mint")
-            return
+            # Mint egg
+            res = post_formdata(payload, MINT_EGG_URL, headers)
+            code = res.get("code")
+            if code != "SUCCESS":
+                print("Mint eggs failed!")
+                return
 
-        # Mint egg
-        res = post_formdata(payload, MINT_EGG_URL, headers)
-        code = res.get("code")
-        if code != "SUCCESS":
-            print("Mint eggs failed!")
-            return
-
-        print(f"Minted Eggs Total: {total_egg}")
+            print(f"Minted Eggs Total: {total_egg}")
 
 
 if __name__ == "__main__":
