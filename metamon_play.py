@@ -393,13 +393,13 @@ class MetamonPlayer:
         battle_level = pick_battle_level(my_level)
         tbar = trange(loop_count)
         
-        if  self.auto_exp_up[0] == True and my_level > 43:    
+        if  self.auto_exp_up[0] == True:    
             exp_up_response = self.exp_up(my_monster_id)
             while (exp_up_response.get("code") == "SUCCESS"):
                 data = exp_up_response.get("data")
                 print(f"\nEXP UP FOR METAMON {my_monster_token_id} SUCCESS : +{data}")
                 exp_up_response = self.exp_up(my_monster_id)
-            if self.auto_lvl_up:
+            if self.auto_lvl_up[0]:
                 # Try to lvl up
                 headers = {
                     "accessToken": self.token,
@@ -507,7 +507,7 @@ class MetamonPlayer:
             if self.battle_record[0] == True:
                 opp_crit_count = self.display_battle(challenge_record,challenge_monster, my_monster_id, my_monster_token_id, my_luk, my_size, my_inv, my_courage, my_inte, old_stdout, maximum_length, game_count)
                 
-            if self.auto_lvl_up:
+            if self.auto_lvl_up[0]:
                 # Try to lvl up
                 res = post_formdata({"nftId": my_monster_id, "address": self.address},
                                     LVL_UP_URL,
@@ -617,6 +617,11 @@ class MetamonPlayer:
             monster_id = monster.get("id")
             tear = monster.get("tear")
             level = monster.get("level")
+            exp = monster.get("exp")
+            if int(level) >= 60 or int(exp) >= 600:
+                print(f"Monster {monster_id} cannot fight due to "
+                      f"max lvl and/or exp overflow. Skipping...")
+                continue
             battlers = self.list_battlers(monster_id)
             ofm = self.other_fighting_mode
             battler = picker_battler(battlers, ofm)
