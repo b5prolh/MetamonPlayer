@@ -387,6 +387,7 @@ class MetamonPlayer:
         my_courage = my_monster.get("crg")
         my_inv = my_monster.get("inv")
         my_level = my_monster.get("level")
+        my_exp = my_monster.get("exp")
         my_power = my_monster.get("sca")
         my_race = my_monster.get("race")
         my_allow_upper = my_monster.get("allowUpper")
@@ -472,6 +473,8 @@ class MetamonPlayer:
             print(f"{target_metamon_print}")            
         game_count = 0
         for _ in tbar:
+            if my_level >= 59 and my_exp >= 600:
+                break
             payload = {
                 "monsterA": my_monster_id,
                 "monsterB": target_monster_id,
@@ -507,7 +510,7 @@ class MetamonPlayer:
             if self.battle_record[0] == True:
                 opp_crit_count = self.display_battle(challenge_record,challenge_monster, my_monster_id, my_monster_token_id, my_luk, my_size, my_inv, my_courage, my_inte, old_stdout, maximum_length, game_count)
                 
-            if self.auto_lvl_up[0]:
+            if self.auto_lvl_up[0] and my_level < 59:
                 # Try to lvl up
                 res = post_formdata({"nftId": my_monster_id, "address": self.address},
                                     LVL_UP_URL,
