@@ -490,7 +490,10 @@ class MetamonPlayer:
             if code == "BATTLE_NOPAY":
                 self.no_enough_money = True
                 break
-            
+            if code != "SUCCESS":
+                print("Battle Failed")
+                break
+                
             data = response.get("data", {})
             challenge_monster = data.get("challengedMonster")
             challenge_record = data.get("challengeRecords")
@@ -621,7 +624,7 @@ class MetamonPlayer:
             tear = monster.get("tear")
             level = monster.get("level")
             exp = monster.get("exp")
-            if int(level) >= 60 or int(exp) >= 600:
+            if int(level) >= 59 or int(exp) >= 600:
                 print(f"Monster {monster_id} cannot fight due to "
                       f"max lvl and/or exp overflow. Skipping...")
                 continue
