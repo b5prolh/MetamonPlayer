@@ -626,7 +626,7 @@ class MetamonPlayer:
             exp = monster.get("exp")
             if int(level) >= 60 or int(exp) >= 600:
                 print(f"Monster {monster_id} cannot fight due to "
-                      f"max lvl and/or exp overflow. Skipping...")
+                      f"max lvl and/or exp overflow. Skipping...")  
                 continue
             battlers = self.list_battlers(monster_id)
             ofm = self.other_fighting_mode
