@@ -172,6 +172,9 @@ Auto join squad with average power lowest default is 335:
 	
 <img src="screenshots/join_squad.png" />
 
+Get List Metamon Token Id of metamons in bag:
+	python metamon_play.py -ti
+
 Will try to read file wallets.tsv in current dir,
 auto fight, mint eggs, and save stats to corresponding 
 files. Now you ready to have fun and explore other options.
