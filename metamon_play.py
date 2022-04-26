@@ -156,12 +156,14 @@ class MetamonPlayer:
         mtm_stats = []
         for mtm in mtms:
             token_id = mtm.get("tokenId")
-            print (token_id)
-            mtm_stats.append({
-                "TokenId": token_id
-            })
-            mtm_stats_df = pd.DataFrame(mtm_stats)
-            self.mtm_stats_df.append(mtm_stats_df)
+            level = mtm.get("level")
+            if level >=57:
+                print (token_id)
+                mtm_stats.append({
+                    "TokenId": token_id
+                })
+                mtm_stats_df = pd.DataFrame(mtm_stats)
+                self.mtm_stats_df.append(mtm_stats_df)
         mtm_stats_df.to_csv("Metamon Token Id", sep="\t", index=False)
         
     def get_squads(self):
