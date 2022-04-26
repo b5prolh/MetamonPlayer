@@ -170,7 +170,7 @@ Auto join squad with average power lowest default is 335:
 
 	python metamon_play.py -kdm
 	
-<img src="screenshots/summary.png" />
+<img src="screenshots/join_squad.png" />
 
 Will try to read file wallets.tsv in current dir,
 auto fight, mint eggs, and save stats to corresponding 
