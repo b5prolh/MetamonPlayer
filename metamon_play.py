@@ -150,6 +150,20 @@ class MetamonPlayer:
             sys.exit(-1)
         self.token = response.get("data").get("accessToken")
         
+    def get_token_ids(self):
+        self.init_token()
+        mtms = self.get_wallet_properties()
+        mtm_stats = []
+        for mtm in mtms:
+            token_id = mtm.get("tokenId")
+            print (token_id)
+            mtm_stats.append({
+                "TokenId": token_id
+            })
+            mtm_stats_df = pd.DataFrame(mtm_stats)
+            self.mtm_stats_df.append(mtm_stats_df)
+        mtm_stats_df.to_csv("Metamon Token Id", sep="\t", index=False)
+        
     def get_squads(self):
         """ Get List of squad ing metamon kingdom"""
         payload = {'address': self.address, 'teamId': -1, 'pageSize': 9999}
@@ -900,6 +914,9 @@ if __name__ == "__main__":
     parser.add_argument("-kdm","--kingdom-mode", help="Run functions on Metamon Kingdom",
                         action="store_true", default=False) 
                         
+    parser.add_argument("-ti","--token-id", help="Get TokenId of metamon in bags",
+                        action="store_true", default=False)      
+                        
     args = parser.parse_args()
 
     if not os.path.exists(args.input_tsv):
@@ -921,6 +938,7 @@ if __name__ == "__main__":
     average_sca = args.average_sca
     is_kingdom_mode = args.kingdom_mode
     fso = args.find_squad_only
+    ti = args.token_id
     for i, r in wallets.iterrows():
         name = ""
         if hasattr(r,"walletname"):
@@ -940,6 +958,8 @@ if __name__ == "__main__":
                             find_squad_only = fso)                 
         if is_kingdom_mode or fso:
             mtm.start_find_squads()
+        elif ti:
+            mtm.get_token_ids()
         else:
             if not args.skip_battles:
                 mtm.battle(w_name=name)
