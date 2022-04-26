@@ -24,6 +24,9 @@ CHECK_BAG_URL = f"{BASE_URL}/checkBag"
 EXP_UP_URL = f"{BASE_URL}/expUpMonster"
 POWER_UP_URL = f"{BASE_URL}/addAttr"
 DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":95,"conMax":200,"crg":48,"crgMax":100,"id":"920382","inte":95,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"40","race":"demon","rarity":"N","sca":305,"tokenId":""}]}}'
+SQUAD_LIST_URL = f"{BASE_URL}/kingdom/teamList"
+JOIN_TEAM_URL = f"{BASE_URL}/kingdom/teamJoin"
+
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -103,13 +106,17 @@ class MetamonPlayer:
                  address,
                  sign,
                  msg="LogIn",
+                 name = "",
                  auto_lvl_up=False,
                  other_fighting_mode = False,
                  lowest_score = False,
                  auto_exp_up = False,
                  auto_power_up = False,
                  battle_record = False,
-                 output_stats=False):
+                 output_stats=False,
+                 average_sca_default = 335,
+                 average_sca = 0,
+                 find_squad_only = False,):
         self.no_enough_money = False
         self.output_stats = output_stats
         self.total_bp_num = 0
@@ -122,6 +129,7 @@ class MetamonPlayer:
         self.address = address
         self.sign = sign
         self.msg = msg
+        self.name = name
         self.auto_lvl_up = auto_lvl_up,
         self.other_fighting_mode = other_fighting_mode,
         self.lowest_score = lowest_score
@@ -130,6 +138,8 @@ class MetamonPlayer:
         self.battle_record = battle_record,
         self.rate = 0,
         self.log_file = open("battle_record.log","w")
+        self.average_sca_default = average_sca_default,
+        self.find_squad_only = find_squad_only
 
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
@@ -139,6 +149,118 @@ class MetamonPlayer:
             sys.stderr.write("Login failed, token is not initialized. Terminating\n")
             sys.exit(-1)
         self.token = response.get("data").get("accessToken")
+        
+    def get_squads(self):
+        """ Get List of squad ing metamon kingdom"""
+        payload = {'address': self.address, 'teamId': -1, 'pageSize': 9999}
+        headers = {
+            "accesstoken": self.token,
+        }
+        response = post_formdata(payload, SQUAD_LIST_URL, headers)
+        squads = []
+        code = response.get("code")
+        if code == "SUCCESS":
+            squads = response.get("data", {}).get("list", [])
+        return squads
+        
+        
+    def metamon_unlock(self):
+        """ Get List of squad ing metamon kingdom"""
+        payload = {"address": self.address}
+        headers = {
+            "accesstoken": self.token,
+        }
+        response = post_formdata(payload, CHECK_BAG_URL, headers)
+        mtm = response.get("data", {}).get("item", [])
+        result = 0
+        for metamon in mtm:
+            mtm_type = metamon.get("bpType")
+            mtm_num = metamon.get("bpNum")
+            if mtm_type == -1:
+                result = int(mtm_num)
+                break
+        return result
+        
+    def join_squad(self, name, teamId):
+        """Join squad"""
+        payload = {'address': self.address, 'teamId': teamId}
+        headers = {
+            "accesstoken": self.token,
+        }
+        response = post_formdata(payload, JOIN_TEAM_URL, headers)
+        code = response.get("code")
+        mtm_num = 0
+        if code == "SUCCESS":
+            mtm_num = response.get("data", {}).get("monsterNum", 0)
+            
+        print(f"{mtm_num} metamon warriors have joined to {name} kingdom for {''.join(self.name)}")   
+        return mtm_num
+        
+    def start_find_squads(self):
+        is_finding = self.find_squads()
+        while(is_finding):
+            is_finding = self.find_squads()
+            
+    def find_squads(self):
+        """ Find best squad to join"""
+        self.init_token()
+        mtm_unlock = self.metamon_unlock()
+
+        if mtm_unlock == 0 and self.find_squad_only == False:
+            print(f"Not found metamon on metamon kingdom for {''.join(self.name)} wallet")
+            return False
+        squads = self.get_squads()
+        if not squads:
+            print("Not found squads to join. Continue finding...")
+            return True
+        else:
+            average_sca_default = self.average_sca_default[0]
+            best_squads = []
+            for sq in squads:
+                totalSca = int(sq.get("totalSca"))
+                name = sq.get("name")
+                monsterNum = int(sq.get("monsterNum"))
+                monsterNumMax = int(sq.get("monsterNumMax"))
+                teamId = sq.get("id")
+                average_sca = 0
+                if monsterNum > 0:
+                    average_sca = totalSca / monsterNum
+                if mtm_unlock >= monsterNumMax and monsterNum == 0:
+                    """Join squad"""
+                    self.join_squad(name, teamId)
+                    return True
+                else:
+                    if average_sca >= average_sca_default:
+                        best_squads.append(sq)
+            if not best_squads:
+                print(f"Not found any squad with average score {average_sca_default} in metamon kingdom. Continue finding...")
+                return True
+            else:
+                best_squads.sort(key = itemgetter('totalSca'), reverse = True)
+               
+                for bs in best_squads:
+                    monsterNumMax = bs.get("monsterNumMax")
+                    monsterNum = bs.get("monsterNum")
+                    totalSca = int(bs.get("totalSca"))
+                    squad_slot = monsterNumMax - monsterNum
+                    squad_num_condition = squad_slot - mtm_unlock
+                    name = bs.get("name")
+                    teamId = bs.get("id")
+                    averageSca = 0
+                    if monsterNum > 0:
+                        averageSca = str(round(totalSca / monsterNum, 2))
+                    if self.find_squad_only == True:
+                        print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
+                        return True                          
+                    else:
+                        if squad_num_condition <= 50:
+                            """Join squad"""
+                            self.join_squad(name, teamId)
+                            return False
+                        else:
+                           print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")
+                           return True
+        return False
 
     def change_fighter(self, monster_id):
         """Switch to next metamon if you have few"""
@@ -768,7 +890,15 @@ if __name__ == "__main__":
     parser.add_argument("-powerup", "--auto-power-up", help="Automatically up power for metamon before battle",
                         action="store_true", default=False)
     parser.add_argument("-br","--battle-record", help="Watching record of each battle, Creating log after finish",
-                        action="store_true", default=False)                        
+                        action="store_true", default=False)
+                        
+    parser.add_argument("-as","--average-sca", help="Find Squad with average score inputing to join", default=335, type=int) 
+  
+    parser.add_argument("-fso","--find-squad-only", help="Find squad with average score from 335 when dont have any metamon level 60",
+                        action="store_true", default=False)
+
+    parser.add_argument("-kdm","--kingdom-mode", help="Run functions on Metamon Kingdom",
+                        action="store_true", default=False) 
                         
     args = parser.parse_args()
 
@@ -788,25 +918,36 @@ if __name__ == "__main__":
     auto_expup = args.auto_exp_up
     other_fmode = args.other_fighting_mode
     lscore = args.lowest_score
+    average_sca = args.average_sca
+    is_kingdom_mode = args.kingdom_mode
+    fso = args.find_squad_only
     for i, r in wallets.iterrows():
+        name = ""
+        if hasattr(r,"walletname"):
+            name = r.walletname
         mtm = MetamonPlayer(address=r.address,
                             sign=r.sign,
                             msg=r.msg,
+                            name = name,
                             auto_lvl_up=auto_lvlup,
                             other_fighting_mode =other_fmode,
                             lowest_score = lscore,
                             auto_exp_up = auto_expup,
                             auto_power_up = auto_powerup,
                             battle_record = args.battle_record,
-                            output_stats=args.save_results)
-
-        if not args.skip_battles:
-            mtm.battle(w_name=r["name"])
+                            output_stats=args.save_results,
+                            average_sca_default = average_sca,
+                            find_squad_only = fso)                 
+        if is_kingdom_mode or fso:
+            mtm.start_find_squads()
         else:
-            if args.auto_exp_up:
-                mtm.auto_up_exp()
-            if args.auto_power_up:
-                mtm.auto_up_power()
-        if args.mint_eggs:
-            mtm.mint_eggs()
+            if not args.skip_battles:
+                mtm.battle(w_name=name)
+            else:
+                if args.auto_exp_up:
+                    mtm.auto_up_exp()
+                if args.auto_power_up:
+                    mtm.auto_up_power()
+            if args.mint_eggs:
+                mtm.mint_eggs()
            
