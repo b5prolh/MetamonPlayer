@@ -112,6 +112,9 @@ Message:
 	-expup, --auto-exp-up, 			Automatically up exp for metamon before battle
 	-powerup, --auto-power-up, 		Automatically up power for metamon before battle. Priority of attribute will be upgraded Courage < 50, Wisdom < 101, Size < 101, Stealth < 50 and Luck
 	-br,--battle-record, 			Watching record of each battle, Creating log after finish
+	-as,--average-sca, 				Find Squad with average score that you want to join
+	-fso,--find-squad-only			Find H=highest power squad with average score from 335 when you dont have any metamon level 60 in your bag
+	-kdm,--kingdom-mode				Run functions on metamon kingdom only like: Find squad, join squad. When use kingdom mode without -as mode, it will find squad  highest power from squad have power lowest 335
 	
 For example:
 
@@ -154,7 +157,21 @@ Play only one lowest score metamon, auto power up, auto exp up
 Summary with up power rate
 
 <img src="screenshots/summary.png" />
+
+Find squad only:
+
+	python metamon_play.py -fso
 	
+Auto join squad with average power input. In this example, I want to join squads that have power lowest is 340:
+
+	python metamon_play.py -kdm -as 340
+	
+Auto join squad with average power lowest default is 335:
+
+	python metamon_play.py -kdm
+	
+<img src="screenshots/summary.png" />
+
 Will try to read file wallets.tsv in current dir,
 auto fight, mint eggs, and save stats to corresponding 
 files. Now you ready to have fun and explore other options.
