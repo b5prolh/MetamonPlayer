@@ -534,6 +534,7 @@ class MetamonPlayer:
         my_power = my_monster.get("sca")
         my_race = my_monster.get("race")
         my_allow_upper = my_monster.get("allowUpper")
+        my_allow_reset = my_monster.get("allowReset")
         battle_level = pick_battle_level(my_level)
         tbar = trange(loop_count)
         
@@ -616,7 +617,7 @@ class MetamonPlayer:
             print(f"{target_metamon_print}")            
         game_count = 0
         for _ in tbar:
-            if my_level >= 59 and my_exp >= 600:
+            if (my_level == 59 and my_exp >= 600) or (my_level == 60 and my_exp >= 395 and my_allow_reset == False):
                 break
             payload = {
                 "monsterA": my_monster_id,
@@ -767,7 +768,7 @@ class MetamonPlayer:
             tear = monster.get("tear")
             level = monster.get("level")
             exp = monster.get("exp")
-            if int(level) >= 60 or int(exp) >= 600:
+            if (my_level == 59 and my_exp >= 600) or (my_level >= 60 and my_exp >= 395):
                 print(f"Monster {monster_id} cannot fight due to "
                       f"max lvl and/or exp overflow. Skipping...")  
                 continue
