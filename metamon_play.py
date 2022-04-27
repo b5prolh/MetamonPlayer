@@ -233,14 +233,13 @@ class MetamonPlayer:
             average_sca_default = self.average_sca_default[0]
             best_squads = []
             for sq in squads:
-                totalSca = int(sq.get("totalSca"))
                 name = sq.get("name")
                 monsterNum = int(sq.get("monsterNum"))
                 monsterNumMax = int(sq.get("monsterNumMax"))
                 teamId = sq.get("id")
-                average_sca = 0
-                if monsterNum > 0:
-                    average_sca = totalSca / monsterNum
+                average_sca = sq.get("averageSca")
+                #if monsterNum > 0:
+                #    average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
                     self.join_squad(name, teamId)
@@ -252,19 +251,20 @@ class MetamonPlayer:
                 print(f"Not found any squad with average score {average_sca_default} in metamon kingdom. Continue finding...")
                 return True
             else:
-                best_squads.sort(key = itemgetter('totalSca'), reverse = True)
+                best_squads.sort(key = itemgetter('averageSca'), reverse = True)
                
                 for bs in best_squads:
+                    
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
-                    totalSca = int(bs.get("totalSca"))
+                    #totalSca = int(bs.get("totalSca"))
                     squad_slot = monsterNumMax - monsterNum
                     squad_num_condition = squad_slot - mtm_unlock
                     name = bs.get("name")
                     teamId = bs.get("id")
-                    averageSca = 0
-                    if monsterNum > 0:
-                        averageSca = str(round(totalSca / monsterNum, 2))
+                    averageSca = bs.get("averageSca")
+                    #if monsterNum > 0:
+                    #    averageSca = str(round(totalSca / monsterNum, 2))
                     if self.find_squad_only == True:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
