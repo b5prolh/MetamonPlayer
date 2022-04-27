@@ -256,7 +256,7 @@ class MetamonPlayer:
                 return True
             else:
                 best_squads.sort(key = itemgetter('totalSca'), reverse = True)
-                print(best_squads)
+
                 for bs in best_squads:
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
