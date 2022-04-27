@@ -255,7 +255,8 @@ class MetamonPlayer:
                 print(f"Not found any squad with average score {average_sca_default} in metamon kingdom. Continue finding...")
                 return True
             else:
-                best_squads.sort(key = itemgetter('totalSca'))
+                best_squads.sort(key = itemgetter('totalSca'), reverse = True)
+                print(best_squads)
                 for bs in best_squads:
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
