@@ -616,6 +616,7 @@ class MetamonPlayer:
                 target_metamon_print = target_metamon_print + "*"
             print(f"{target_metamon_print}")            
         game_count = 0
+        opp_crit_count = 0
         for _ in tbar:
             if (my_level == 59 and my_exp >= 600) or (my_level == 60 and my_exp >= 395 and my_allow_reset == False):
                 break
@@ -768,7 +769,7 @@ class MetamonPlayer:
             tear = monster.get("tear")
             level = monster.get("level")
             exp = monster.get("exp")
-            if (my_level == 59 and my_exp >= 600) or (my_level >= 60 and my_exp >= 395):
+            if (level == 59 and exp >= 600) or (level >= 60 and exp >= 395):
                 print(f"Monster {monster_id} cannot fight due to "
                       f"max lvl and/or exp overflow. Skipping...")  
                 continue
