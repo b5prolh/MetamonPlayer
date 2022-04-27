@@ -152,10 +152,12 @@ class MetamonPlayer:
         
     def get_token_ids(self):
         self.init_token()
+        print("Metamons token id are exporting ...")
         mtms = self.get_wallet_properties()
         mtm_stats = []
         for mtm in mtms:
             token_id = mtm.get("tokenId")
+            print(f"Export Metamon Token Id {token_id}")
             level = mtm.get("level")
             if level >=57:
                 print (token_id)
