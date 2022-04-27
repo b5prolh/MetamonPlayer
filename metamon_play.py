@@ -769,7 +769,9 @@ class MetamonPlayer:
             tear = monster.get("tear")
             level = monster.get("level")
             exp = monster.get("exp")
-            if (level == 59 and exp >= 600) or (level >= 60 and exp >= 395):
+            allow_reset = monster.get("allowReset")
+  
+            if (level == 59 and exp >= 600) or (level >= 60 and  allow_reset == False):
                 print(f"Monster {monster_id} cannot fight due to "
                       f"max lvl and/or exp overflow. Skipping...")  
                 continue
