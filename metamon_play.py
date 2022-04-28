@@ -7,6 +7,7 @@ import pandas as pd
 from time import sleep
 from datetime import datetime
 from operator import itemgetter
+import operator
 import json
 import sys
 
@@ -257,8 +258,7 @@ class MetamonPlayer:
                 print(f"Not found any squad with average score {average_sca_default} in metamon kingdom. Continue finding...")
                 return True
             else:
-                best_squads.sort(key = itemgetter('totalSca'), reverse = True)
-
+                best_squads = sorted(best_squads, key=lambda x: int(operator.itemgetter("totalSca")(x)), reverse=True)
                 for bs in best_squads:
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
