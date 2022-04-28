@@ -160,13 +160,12 @@ class MetamonPlayer:
             token_id = mtm.get("tokenId")
             print(f"Export Metamon Token Id {token_id}")
             level = mtm.get("level")
-            if level >=57:
-                print (token_id)
-                mtm_stats.append({
-                    "TokenId": token_id
-                })
-                mtm_stats_df = pd.DataFrame(mtm_stats)
-                self.mtm_stats_df.append(mtm_stats_df)
+            print (token_id)
+            mtm_stats.append({
+                "TokenId": token_id
+            })
+            mtm_stats_df = pd.DataFrame(mtm_stats)
+            self.mtm_stats_df.append(mtm_stats_df)
         mtm_stats_df.to_csv("Metamon Token Id", sep="\t", index=False)
         
     def get_squads(self):
@@ -360,6 +359,8 @@ class MetamonPlayer:
             monster for monster in wallet_monsters if monster.get("allowUpper") == True
         ]
         print(f"Available Metamon to up power: {len(available_monsters)}")
+        available_monsters = sorted(available_monsters, key=lambda x: int(operator.itemgetter("sca")(x)), reverse=True)
+        print(available_monsters)
         for monster in available_monsters:
             my_monster_token_id = monster.get("tokenId")
             my_monster_id = monster.get("id")
@@ -368,35 +369,42 @@ class MetamonPlayer:
             my_inte = monster.get("inte")
             my_courage = monster.get("crg")
             my_inv = monster.get("inv")
-            attr_up_type = 1
-            attr_up_name = "Luck"
-            if my_courage < 50:
+            attr_up_type = 5
+            attr_up_name = "Stealth"
+            if my_luk < 50:
+               attr_up_type = 1 
+            elif my_courage < my_inv and my_courage < 100:
                 attr_up_type = 2
                 attr_up_name = "Courage"
-            elif my_inte < 101:
-                attr_up_type = 3
-                attr_up_name = "Wisdom"
-            elif my_size < 101:
-                attr_up_type = 4
-                attr_up_name = "Size"
-            elif my_inv < 50:
+            elif my_inv < my_courage and my_inv < 100:
                 attr_up_type = 5
                 attr_up_name = "Stealth"
-            power_up_response = self.power_up(my_monster_id, attr_up_type)
-            if power_up_response.get("code") == "SUCCESS":
-                data = power_up_response.get("data")
-                if data.get("upperNum") == 0:
-                    print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} failed")
+            elif my_inte < 104:
+                attr_up_type = 3
+                attr_up_name = "Wisdom"
+            elif my_size < 104:
+                attr_up_type = 4
+                attr_up_name = "Size"
+            for i in range(0, 5):
+                power_up_response = self.power_up(my_monster_id, attr_up_type)
+                if power_up_response.get("code") == "SUCCESS":
+                    data = power_up_response.get("data")
+                    if data.get("upperNum") == 0:
+                        print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} failed")
+                    else:
+                        attr_num = data.get("attrNum")
+                        upper_num = data.get("upperNum")
+                        upper_attr_num = data.get("upperAttrNum")
+                        sca = data.get("sca")
+                        upper_sca = data.get("upperSca")
+                        print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
+                        print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
+                elif power_up_response.get("code") == "INSUFFICIENT_PROP_ERROR":
+                    print(f"You don't enough potion to power up")
+                    break
                 else:
-                    attr_num = data.get("attrNum")
-                    upper_num = data.get("upperNum")
-                    upper_attr_num = data.get("upperAttrNum")
-                    sca = data.get("sca")
-                    upper_sca = data.get("upperSca")
-                    print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
-                    print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
-            else:
-                print(f"Up {attr_up_name} for metamon {my_monster_token_id} unsuccesful")
+                    print(f"Power up unsuccesful")
+            
          
     def display_battle(self,
                        challenge_record,
