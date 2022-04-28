@@ -118,7 +118,7 @@ Message:
 	
 For example:
 
-Power up only mode
+Power up only mode. After up green potion, purple potion will use for metamons have highest power in your team.
 
 	python metamon_play.py -nb -powerup
 	
