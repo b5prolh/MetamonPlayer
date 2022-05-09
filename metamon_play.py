@@ -7,8 +7,11 @@ import pandas as pd
 from time import sleep
 from datetime import datetime
 from operator import itemgetter
+import operator
 import json
 import sys
+import asyncio
+import aiohttp
 
 # URLs to make api calls
 BASE_URL = "https://metamon-api.radiocaca.com/usm-api"
@@ -26,12 +29,13 @@ POWER_UP_URL = f"{BASE_URL}/addAttr"
 DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":95,"conMax":200,"crg":48,"crgMax":100,"id":"920382","inte":95,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"40","race":"demon","rarity":"N","sca":305,"tokenId":""}]}}'
 SQUAD_LIST_URL = f"{BASE_URL}/kingdom/teamList"
 JOIN_TEAM_URL = f"{BASE_URL}/kingdom/teamJoin"
-
+BUY_VALHALLA_URL = f"{BASE_URL}/official-sale/buy"
+ADD_HEALTHY = f"https://metamon-api.radiocaca.com/usm-api/addHealthy?address="
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
 
-def post_formdata(payload, url="", headers=None, params=None):
+def post_formdata(payload, url="", headers=None, params=None, is_sleep=True):
     """Method to send request to game"""
     files = []
     if headers is None:
@@ -41,7 +45,9 @@ def post_formdata(payload, url="", headers=None, params=None):
     for _ in range(5):
         try:
             # Add delay to avoid error from too many requests per second
-            sleep(1)
+
+            if is_sleep:
+                sleep(1)
             response = requests.request("POST",
                                         url,
                                         headers=headers,
@@ -52,7 +58,16 @@ def post_formdata(payload, url="", headers=None, params=None):
         except:
             continue
     return {}
+    
+def auto_buy_request(url, address, headers, session, requestsNumber):
+    """Method to send request to game"""
+    tasks = []   
+    requestsNumber = requestsNumber + 50
+    payload = {'address': address, 'orderId': "111"}
+    for i in range(0,requestsNumber):
+        tasks.append(asyncio.create_task(session.post(url, data =payload, headers=headers, ssl=False)))
 
+    return tasks
 
 def get_battler_score(monster):
     """ Get opponent's power score"""
@@ -116,7 +131,8 @@ class MetamonPlayer:
                  output_stats=False,
                  average_sca_default = 335,
                  average_sca = 0,
-                 find_squad_only = False,):
+                 find_squad_only = False,
+                 add_healthy = False):
         self.no_enough_money = False
         self.output_stats = output_stats
         self.total_bp_num = 0
@@ -140,6 +156,7 @@ class MetamonPlayer:
         self.log_file = open("battle_record.log","w")
         self.average_sca_default = average_sca_default,
         self.find_squad_only = find_squad_only
+        self.add_healthy = add_healthy
 
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
@@ -152,19 +169,43 @@ class MetamonPlayer:
         
     def get_token_ids(self):
         self.init_token()
+        print("Metamons token id are exporting ...")
         mtms = self.get_wallet_properties()
         mtm_stats = []
         for mtm in mtms:
             token_id = mtm.get("tokenId")
+            print(f"Export Metamon Token Id {token_id}")
             level = mtm.get("level")
-            if level >=57:
-                print (token_id)
-                mtm_stats.append({
-                    "TokenId": token_id
-                })
-                mtm_stats_df = pd.DataFrame(mtm_stats)
-                self.mtm_stats_df.append(mtm_stats_df)
+            print (token_id)
+            mtm_stats.append({
+                "TokenId": token_id
+            })
+            mtm_stats_df = pd.DataFrame(mtm_stats)
+            self.mtm_stats_df.append(mtm_stats_df)
         mtm_stats_df.to_csv("Metamon Token Id", sep="\t", index=False)
+       
+    def buy_item(self):
+        print("Starting buy purple potion...")
+
+        headers = {
+           "accessToken": self.token,
+        }
+        payload = {'address': self.address, 'orderId': "111"}
+        item_buy_count = self.metamon_unlock(-1)
+        print(f"Purple potion available to buy: {item_buy_count}")
+        for i in range(0, item_buy_count):
+            response = post_formdata(payload, BUY_VALHALLA_URL, headers, is_sleep=False)
+            time = datetime_now()
+            print(f"Buy purple potion {time} {response}")
+            
+    def add_healthy(self, nftId):
+        if self.token is None:
+            self.init_token()
+        headers = {
+           "accessToken": self.token,
+        }
+        payload = {'nftId': nftId}
+        response = post_formdata(payload, ADD_HEALTHY, headers, is_sleep=False)   
         
     def get_squads(self):
         """ Get List of squad ing metamon kingdom"""
@@ -180,7 +221,7 @@ class MetamonPlayer:
         return squads
         
         
-    def metamon_unlock(self):
+    def metamon_unlock(self, bpType):
         """ Get List of squad ing metamon kingdom"""
         payload = {"address": self.address}
         headers = {
@@ -192,7 +233,7 @@ class MetamonPlayer:
         for metamon in mtm:
             mtm_type = metamon.get("bpType")
             mtm_num = metamon.get("bpNum")
-            if mtm_type == -1:
+            if mtm_type == bpType:
                 result = int(mtm_num)
                 break
         return result
@@ -220,7 +261,7 @@ class MetamonPlayer:
     def find_squads(self):
         """ Find best squad to join"""
         self.init_token()
-        mtm_unlock = self.metamon_unlock()
+        mtm_unlock = self.metamon_unlock(-2)
 
         if mtm_unlock == 0 and self.find_squad_only == False:
             print(f"Not found metamon on metamon kingdom for {''.join(self.name)} wallet")
@@ -255,8 +296,7 @@ class MetamonPlayer:
                 print(f"Not found any squad with average score {average_sca_default} in metamon kingdom. Continue finding...")
                 return True
             else:
-                best_squads.sort(key = itemgetter('totalSca'), reverse = True)
-
+                best_squads = sorted(best_squads, key=lambda x: int(operator.itemgetter("totalSca")(x)), reverse=True)
                 for bs in best_squads:
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
@@ -358,6 +398,8 @@ class MetamonPlayer:
             monster for monster in wallet_monsters if monster.get("allowUpper") == True
         ]
         print(f"Available Metamon to up power: {len(available_monsters)}")
+        available_monsters = sorted(available_monsters, key=lambda x: int(operator.itemgetter("sca")(x)), reverse=True)
+
         for monster in available_monsters:
             my_monster_token_id = monster.get("tokenId")
             my_monster_id = monster.get("id")
@@ -366,35 +408,42 @@ class MetamonPlayer:
             my_inte = monster.get("inte")
             my_courage = monster.get("crg")
             my_inv = monster.get("inv")
-            attr_up_type = 1
-            attr_up_name = "Luck"
-            if my_courage < 50:
+            attr_up_type = 5
+            attr_up_name = "Stealth"
+            if my_luk < 50:
+               attr_up_type = 1 
+            elif my_courage < my_inv and my_courage < 100:
                 attr_up_type = 2
                 attr_up_name = "Courage"
-            elif my_inte < 101:
-                attr_up_type = 3
-                attr_up_name = "Wisdom"
-            elif my_size < 101:
-                attr_up_type = 4
-                attr_up_name = "Size"
-            elif my_inv < 50:
+            elif my_inv < my_courage and my_inv < 100:
                 attr_up_type = 5
                 attr_up_name = "Stealth"
-            power_up_response = self.power_up(my_monster_id, attr_up_type)
-            if power_up_response.get("code") == "SUCCESS":
-                data = power_up_response.get("data")
-                if data.get("upperNum") == 0:
-                    print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} failed")
+            elif my_inte < 104:
+                attr_up_type = 3
+                attr_up_name = "Wisdom"
+            elif my_size < 104:
+                attr_up_type = 4
+                attr_up_name = "Size"
+            for i in range(0, 5):
+                power_up_response = self.power_up(my_monster_id, attr_up_type)
+                if power_up_response.get("code") == "SUCCESS":
+                    data = power_up_response.get("data")
+                    if data.get("upperNum") == 0:
+                        print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} failed")
+                    else:
+                        attr_num = data.get("attrNum")
+                        upper_num = data.get("upperNum")
+                        upper_attr_num = data.get("upperAttrNum")
+                        sca = data.get("sca")
+                        upper_sca = data.get("upperSca")
+                        print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
+                        print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
+                elif power_up_response.get("code") == "INSUFFICIENT_PROP_ERROR":
+                    print(f"You don't enough purple potion to power up")
+                    break
                 else:
-                    attr_num = data.get("attrNum")
-                    upper_num = data.get("upperNum")
-                    upper_attr_num = data.get("upperAttrNum")
-                    sca = data.get("sca")
-                    upper_sca = data.get("upperSca")
-                    print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
-                    print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
-            else:
-                print(f"Up {attr_up_name} for metamon {my_monster_token_id} unsuccesful")
+                    print(f"Power up unsuccesful")
+            
          
     def display_battle(self,
                        challenge_record,
@@ -535,9 +584,11 @@ class MetamonPlayer:
         my_race = my_monster.get("race")
         my_allow_upper = my_monster.get("allowUpper")
         my_allow_reset = my_monster.get("allowReset")
+        my_healthy = my_monster.get("healthy")
         battle_level = pick_battle_level(my_level)
         tbar = trange(loop_count)
-        
+        if my_healthy <= 90:
+            self.add_healthy(my_monster_id)
         if  self.auto_exp_up[0] == True:    
             exp_up_response = self.exp_up(my_monster_id)
             while (exp_up_response.get("code") == "SUCCESS"):
@@ -926,8 +977,12 @@ if __name__ == "__main__":
                         action="store_true", default=False) 
                         
     parser.add_argument("-ti","--token-id", help="Get TokenId of metamon in bags",
-                        action="store_true", default=False)      
-                        
+                        action="store_true", default=False)
+
+    parser.add_argument("-buy","--buy-purple-potion", help="Buy purple potion equal with number of metamon in metamon kingdom", action="store_true", default=False)                         
+    
+    parser.add_argument("-ah","--add-healthy", help="Automatically adding healthy for metamon have healthy below 90", action="store_true", default=False)                             
+    
     args = parser.parse_args()
 
     if not os.path.exists(args.input_tsv):
@@ -950,6 +1005,8 @@ if __name__ == "__main__":
     is_kingdom_mode = args.kingdom_mode
     fso = args.find_squad_only
     ti = args.token_id
+    buy_purple_potion = args.buy_purple_potion
+    add_healthy = args.add_healthy
     for i, r in wallets.iterrows():
         name = ""
         if hasattr(r,"walletname"):
@@ -966,11 +1023,14 @@ if __name__ == "__main__":
                             battle_record = args.battle_record,
                             output_stats=args.save_results,
                             average_sca_default = average_sca,
-                            find_squad_only = fso)                 
+                            find_squad_only = fso,
+                            add_healthy = add_healthy)                 
         if is_kingdom_mode or fso:
             mtm.start_find_squads()
         elif ti:
             mtm.get_token_ids()
+        elif buy_purple_potion:
+            mtm.buy_item()
         else:
             if not args.skip_battles:
                 mtm.battle(w_name=name)
