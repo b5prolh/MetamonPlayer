@@ -118,7 +118,7 @@ Message:
 	
 For example:
 
-Power up only mode
+Power up only mode. After up green potion, purple potion will use for metamons have highest power in your team.
 
 	python metamon_play.py -nb -powerup
 	
@@ -174,6 +174,12 @@ Auto join squad with average power lowest default is 335:
 
 Get List Metamon Token Id of metamons in bag:
 	python metamon_play.py -ti
+	
+Buy purple potion:
+	python metamon_play.py -buy
+	
+Auto play and adding healthy:
+	python metamon_play.py -e -s -ls -br -ah
 
 Will try to read file wallets.tsv in current dir,
 auto fight, mint eggs, and save stats to corresponding 
