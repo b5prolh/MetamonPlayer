@@ -13,6 +13,7 @@ import sys
 import asyncio
 import aiohttp
 
+
 # URLs to make api calls
 BASE_URL = "https://metamon-api.radiocaca.com/usm-api"
 TOKEN_URL = f"{BASE_URL}/login"
@@ -162,6 +163,7 @@ class MetamonPlayer:
         """Obtain token for game session to perform battles and other actions"""
         payload = {"address": self.address, "sign": self.sign, "msg": self.msg, "network": "1", "clientType": "MetaMask"}
         response = post_formdata(payload, TOKEN_URL)
+        print(response)
         if response.get("code") != "SUCCESS":
             sys.stderr.write("Login failed, token is not initialized. Terminating\n")
             sys.exit(-1)
@@ -186,7 +188,8 @@ class MetamonPlayer:
        
     def buy_item(self):
         print("Starting buy purple potion...")
-
+        if self.token == None:
+            self.init_token()
         headers = {
            "accessToken": self.token,
         }
@@ -260,7 +263,8 @@ class MetamonPlayer:
             
     def find_squads(self):
         """ Find best squad to join"""
-        self.init_token()
+        if self.token == None:
+            self.init_token()
         mtm_unlock = self.metamon_unlock(-2)
 
         if mtm_unlock == 0 and self.find_squad_only == False:
