@@ -10,8 +10,8 @@ from operator import itemgetter
 import operator
 import json
 import sys
-import asyncio
-import aiohttp
+#import asyncio
+#import aiohttp
 
 
 # URLs to make api calls
