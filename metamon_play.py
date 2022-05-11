@@ -32,6 +32,8 @@ SQUAD_LIST_URL = f"{BASE_URL}/kingdom/teamList"
 JOIN_TEAM_URL = f"{BASE_URL}/kingdom/teamJoin"
 BUY_VALHALLA_URL = f"{BASE_URL}/official-sale/buy"
 ADD_HEALTHY = f"https://metamon-api.radiocaca.com/usm-api/addHealthy?address="
+RESET_EXP = f"{BASE_URL}/resetMonster"
+
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -185,6 +187,22 @@ class MetamonPlayer:
             mtm_stats_df = pd.DataFrame(mtm_stats)
             self.mtm_stats_df.append(mtm_stats_df)
         mtm_stats_df.to_csv("Metamon Token Id", sep="\t", index=False)
+        
+    def reset_exp(self, mtmId):
+        """Obtain list of opponents"""
+        try:
+            payload = {
+                "address": self.address,
+                "nftId": mtmId,
+            }
+            headers = {
+                "accessToken": self.token,
+            }
+            response = post_formdata(payload, RESET_MONSTER, headers)
+            return response
+        except:
+            print("Reset monster failed")
+        return None
        
     def buy_item(self):
         print("Starting buy purple potion...")
@@ -216,7 +234,7 @@ class MetamonPlayer:
         headers = {
             "accesstoken": self.token,
         }
-        response = post_formdata(payload, SQUAD_LIST_URL, headers)
+        response = post_formdata(payload, SQUAD_LIST_URL, headers, False)
         squads = []
         code = response.get("code")
         if code == "SUCCESS":
@@ -318,7 +336,7 @@ class MetamonPlayer:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
                     else:
-                        if squad_num_condition <= 50:
+                        if squad_num_condition <= 200:
                             """Join squad"""
                             self.join_squad(name, teamId)
                             return False
@@ -675,6 +693,11 @@ class MetamonPlayer:
         for _ in tbar:
             if (my_level == 59 and my_exp >= 600) or (my_level == 60 and my_exp >= 395 and my_allow_reset == False):
                 break
+            if my_level >= 60 and my_exp >= 395:
+                resetResponse = self.reset_exp(my_monster_id)
+                if resetResponse == None or resetResponse.get("code") != "SUCCESS":
+                    break
+                    
             payload = {
                 "monsterA": my_monster_id,
                 "monsterB": target_monster_id,
@@ -830,6 +853,10 @@ class MetamonPlayer:
                 print(f"Monster {monster_id} cannot fight due to "
                       f"max lvl and/or exp overflow. Skipping...")  
                 continue
+            if level >= 60 and my_exp >= 395:
+                resetResponse = self.reset_exp(my_monster_id)
+                if resetResponse == None or resetResponse.get("code") != "SUCCESS":
+                    continue
             battlers = self.list_battlers(monster_id)
             ofm = self.other_fighting_mode
             battler = picker_battler(battlers, ofm)
