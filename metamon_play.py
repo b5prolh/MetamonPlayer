@@ -336,7 +336,7 @@ class MetamonPlayer:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
                     else:
-                        if squad_num_condition <= 200:
+                        if squad_num_condition <= 100:
                             """Join squad"""
                             self.join_squad(name, teamId)
                             return False
