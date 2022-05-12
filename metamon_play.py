@@ -199,7 +199,7 @@ class MetamonPlayer:
             }
             response = post_formdata(payload, RESET_EXP, headers)
             return response
-        except Exception e:
+        except Exception as e:
             print(f"Reset monster failed {e}")
         return None
        
