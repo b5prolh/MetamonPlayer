@@ -853,7 +853,7 @@ class MetamonPlayer:
                       f"max lvl and/or exp overflow. Skipping...")  
                 continue
             if level >= 60 and exp >= 395:
-                resetResponse = self.reset_exp(my_monster_id)
+                resetResponse = self.reset_exp(monster_id)
                 if resetResponse == None or resetResponse.get("code") != "SUCCESS":
                     continue
             battlers = self.list_battlers(monster_id)
