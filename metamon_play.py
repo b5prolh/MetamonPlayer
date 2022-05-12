@@ -165,7 +165,6 @@ class MetamonPlayer:
         """Obtain token for game session to perform battles and other actions"""
         payload = {"address": self.address, "sign": self.sign, "msg": self.msg, "network": "1", "clientType": "MetaMask"}
         response = post_formdata(payload, TOKEN_URL)
-        print(response)
         if response.get("code") != "SUCCESS":
             sys.stderr.write("Login failed, token is not initialized. Terminating\n")
             sys.exit(-1)
@@ -318,7 +317,7 @@ class MetamonPlayer:
                 print(f"Not found any squad with average score {average_sca_default} in metamon kingdom. Continue finding...")
                 return True
             else:
-                best_squads = sorted(best_squads, key=lambda x: int(operator.itemgetter("totalSca")(x)), reverse=True)
+                best_squads = sorted(best_squads, key=lambda x: (int(operator.itemgetter("totalSca")(x)), int(operator.itemgetter("monsterNumRarity")(x))), reverse=True)
                 for bs in best_squads:
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
@@ -853,7 +852,7 @@ class MetamonPlayer:
                 print(f"Monster {monster_id} cannot fight due to "
                       f"max lvl and/or exp overflow. Skipping...")  
                 continue
-            if level >= 60 and my_exp >= 395:
+            if level >= 60 and exp >= 395:
                 resetResponse = self.reset_exp(my_monster_id)
                 if resetResponse == None or resetResponse.get("code") != "SUCCESS":
                     continue
