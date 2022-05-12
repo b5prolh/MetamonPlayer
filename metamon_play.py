@@ -197,10 +197,10 @@ class MetamonPlayer:
             headers = {
                 "accessToken": self.token,
             }
-            response = post_formdata(payload, RESET_MONSTER, headers)
+            response = post_formdata(payload, RESET_EXP, headers)
             return response
-        except:
-            print("Reset monster failed")
+        except Exception e:
+            print(f"Reset monster failed {e}")
         return None
        
     def buy_item(self):
