@@ -33,6 +33,7 @@ JOIN_TEAM_URL = f"{BASE_URL}/kingdom/teamJoin"
 BUY_VALHALLA_URL = f"{BASE_URL}/official-sale/buy"
 ADD_HEALTHY = f"https://metamon-api.radiocaca.com/usm-api/addHealthy?address="
 RESET_EXP = f"{BASE_URL}/resetMonster"
+MONSTER_LVL_60 = f"{BASE_URL}/kingdom/monsterList"
 
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
@@ -198,6 +199,7 @@ class MetamonPlayer:
                 "accessToken": self.token,
             }
             response = post_formdata(payload, RESET_EXP, headers)
+
             return response
         except Exception as e:
             print(f"Reset monster failed {e}")
@@ -227,6 +229,20 @@ class MetamonPlayer:
         payload = {'nftId': nftId}
         response = post_formdata(payload, ADD_HEALTHY, headers, is_sleep=False)   
         
+    def get_kingdom_monsters(self):
+        """ Get List of squad ing metamon kingdom"""
+        payload = {'address': self.address, 'orderType': 2, 'position': 2}
+        headers = {
+            "accesstoken": self.token,
+        }
+        response = post_formdata(payload, MONSTER_LVL_60, headers, False)
+        monsters = []
+        code = response.get("code")
+
+        if code == "SUCCESS":
+            monsters = response.get("data", [])
+        return monsters
+        
     def get_squads(self):
         """ Get List of squad ing metamon kingdom"""
         payload = {'address': self.address, 'teamId': -1, 'pageSize': 9999}
@@ -238,8 +254,7 @@ class MetamonPlayer:
         code = response.get("code")
         if code == "SUCCESS":
             squads = response.get("data", {}).get("list", [])
-        return squads
-        
+        return squads 
         
     def metamon_unlock(self, bpType):
         """ Get List of squad ing metamon kingdom"""
@@ -415,13 +430,18 @@ class MetamonPlayer:
         #TODO
         self.init_token()
         wallet_monsters = self.get_wallet_properties()
+        available_monsters = []
         available_monsters = [
             monster for monster in wallet_monsters if monster.get("allowUpper") == True
         ]
-        print(f"Available Metamon to up power: {len(available_monsters)}")
-        available_monsters = sorted(available_monsters, key=lambda x: int(operator.itemgetter("sca")(x)), reverse=True)
+        kingdom_monsters = self.get_kingdom_monsters()
 
-        for monster in available_monsters:
+        monsters_power_up = available_monsters + kingdom_monsters
+        
+        print(f"Available Metamon to up power: {len(monsters_power_up)}")
+        monsters_power_up = sorted(monsters_power_up, key=lambda x: int(operator.itemgetter("sca")(x)), reverse=True)
+
+        for monster in monsters_power_up:
             my_monster_token_id = monster.get("tokenId")
             my_monster_id = monster.get("id")
             my_luk = monster.get("luk")
@@ -464,7 +484,6 @@ class MetamonPlayer:
                     break
                 else:
                     print(f"Power up unsuccesful")
-            
          
     def display_battle(self,
                        challenge_record,
