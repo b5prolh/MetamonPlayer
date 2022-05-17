@@ -265,12 +265,21 @@ class MetamonPlayer:
         response = post_formdata(payload, CHECK_BAG_URL, headers)
         mtm = response.get("data", {}).get("item", [])
         result = 0
+        mtm_60_island = 0
         for metamon in mtm:
             mtm_type = metamon.get("bpType")
             mtm_num = metamon.get("bpNum")
+            
             if mtm_type == bpType:
                 result = int(mtm_num)
                 break
+        if bpType == -1:
+            wallet_monsters = self.get_wallet_properties()
+            available_monsters = [
+                #monster for monster in wallet_monsters if monster.get("tear") > 0 and monster.get("exp") < 600 and monster.get("level") < 60
+                monster for monster in wallet_monsters if monster.get("level") >= 60
+            ]
+            result = len(available_monsters) + result
         return result
         
     def join_squad(self, name, teamId):
@@ -772,9 +781,11 @@ class MetamonPlayer:
             self.total_bp_num += bp_fragment_num
             total_bp_fragment_num += bp_fragment_num
             if fight_result:
+                my_exp = int(my_exp)+5
                 success += 1
                 self.total_success += 1
             else:
+                my_exp = int(my_exp)+3
                 fail += 1
                 self.total_fail += 1
         if self.battle_record[0] == True:
@@ -851,8 +862,7 @@ class MetamonPlayer:
         summary_file_name = f"{w_name}_summary.tsv"
         mtm_stats_file_name = f"{w_name}_stats.tsv"
         self.init_token()
-
-        self.get_wallet_properties()
+        
         monsters = self.list_monsters()
         wallet_monsters = self.get_wallet_properties()
 
