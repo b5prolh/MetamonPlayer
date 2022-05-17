@@ -199,7 +199,7 @@ class MetamonPlayer:
                 "accessToken": self.token,
             }
             response = post_formdata(payload, RESET_EXP, headers)
-
+            print(response)
             return response
         except Exception as e:
             print(f"Reset monster failed {e}")
@@ -220,7 +220,7 @@ class MetamonPlayer:
             time = datetime_now()
             print(f"Buy purple potion {time} {response}")
             
-    def add_healthy(self, nftId):
+    def add_metamon_healthy(self, nftId):
         if self.token is None:
             self.init_token()
         headers = {
@@ -459,10 +459,10 @@ class MetamonPlayer:
             elif my_inv < my_courage and my_inv < 100:
                 attr_up_type = 5
                 attr_up_name = "Stealth"
-            elif my_inte < 104:
+            elif my_inte < 200:
                 attr_up_type = 3
                 attr_up_name = "Wisdom"
-            elif my_size < 104:
+            elif my_size < 200:
                 attr_up_type = 4
                 attr_up_name = "Size"
             for i in range(0, 5):
@@ -628,7 +628,7 @@ class MetamonPlayer:
         battle_level = pick_battle_level(my_level)
         tbar = trange(loop_count)
         if my_healthy <= 90:
-            self.add_healthy(my_monster_id)
+            self.add_metamon_healthy(my_monster_id)
         if  self.auto_exp_up[0] == True:    
             exp_up_response = self.exp_up(my_monster_id)
             while (exp_up_response.get("code") == "SUCCESS"):
@@ -715,6 +715,9 @@ class MetamonPlayer:
                 resetResponse = self.reset_exp(my_monster_id)
                 if resetResponse == None or resetResponse.get("code") != "SUCCESS":
                     break
+                else:
+                    print("Reset EXP Success!")
+                    my_exp = 0
                     
             payload = {
                 "monsterA": my_monster_id,
@@ -875,6 +878,9 @@ class MetamonPlayer:
                 resetResponse = self.reset_exp(monster_id)
                 if resetResponse == None or resetResponse.get("code") != "SUCCESS":
                     continue
+                else:
+                    print("Reset EXP Success!")
+                    monster["exp"] = 0
             battlers = self.list_battlers(monster_id)
             ofm = self.other_fighting_mode
             battler = picker_battler(battlers, ofm)
