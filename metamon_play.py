@@ -227,7 +227,8 @@ class MetamonPlayer:
            "accessToken": self.token,
         }
         payload = {'nftId': nftId}
-        response = post_formdata(payload, ADD_HEALTHY, headers, is_sleep=False)   
+        response = post_formdata(payload, f"{ADD_HEALTHY}{self.address}", headers, is_sleep=False)
+        print(response)
         
     def get_kingdom_monsters(self):
         """ Get List of squad ing metamon kingdom"""
@@ -825,6 +826,7 @@ class MetamonPlayer:
             "Race": my_race,
             "Power": my_power,
             "Level": my_level,
+            "Healthy": my_healthy,
             "Total battles": loop_count,
             "Victories": success,
             "Defeats": fail,
