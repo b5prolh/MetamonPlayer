@@ -27,7 +27,8 @@ MINT_EGG_URL = f"{BASE_URL}/composeMonsterEgg"
 CHECK_BAG_URL = f"{BASE_URL}/checkBag"
 EXP_UP_URL = f"{BASE_URL}/expUpMonster"
 POWER_UP_URL = f"{BASE_URL}/addAttr"
-DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":95,"conMax":200,"crg":48,"crgMax":100,"id":"920382","inte":95,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"40","race":"demon","rarity":"N","sca":305,"tokenId":""}]}}'
+CHECK_POWER_UP_URL = f"{BASE_URL}/addAttrNeedAsset"
+DEFAULT_METAMON_BATTLE = '{"code":"SUCCESS","data":{"objects":[{"con":95,"crg":48,"id":"791430","inte":95,"inteMax":200,"inv":48,"luk":19,"lukMax":50, "level":"40","race":"demon","rarity":"N","sca":305,"tokenId":"405133"}]}}'
 SQUAD_LIST_URL = f"{BASE_URL}/kingdom/teamList"
 JOIN_TEAM_URL = f"{BASE_URL}/kingdom/teamJoin"
 BUY_VALHALLA_URL = f"{BASE_URL}/official-sale/buy"
@@ -136,7 +137,8 @@ class MetamonPlayer:
                  average_sca_default = 335,
                  average_sca = 0,
                  find_squad_only = False,
-                 add_healthy = False):
+                 add_healthy = False,
+                 is_use_green_potion_only = False):
         self.no_enough_money = False
         self.output_stats = output_stats
         self.total_bp_num = 0
@@ -161,7 +163,7 @@ class MetamonPlayer:
         self.average_sca_default = average_sca_default,
         self.find_squad_only = find_squad_only
         self.add_healthy = add_healthy
-
+        self.is_use_green_potion_only = is_use_green_potion_only
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
         payload = {"address": self.address, "sign": self.sign, "msg": self.msg, "network": "1", "clientType": "MetaMask"}
@@ -419,7 +421,20 @@ class MetamonPlayer:
             "accessToken": self.token,
         }
         response = post_formdata(payload, POWER_UP_URL, headers, params)
-        return response    
+        return response  
+
+    def check_power_up(self, monster_id, attr_type = 1):
+        """Up exp for metamon"""
+        payload = {
+            "attrType": attr_type,
+            "nftId": monster_id
+        }
+        params = {'address': self.address}
+        headers = {
+            "accessToken": self.token,
+        }
+        response = post_formdata(payload, CHECK_POWER_UP_URL, headers, params)
+        return response          
         
     def auto_up_exp(self):
         """Automatically up exp for metamon"""
@@ -444,13 +459,13 @@ class MetamonPlayer:
         available_monsters = [
             monster for monster in wallet_monsters if monster.get("allowUpper") == True
         ]
-        kingdom_monsters = self.get_kingdom_monsters()
-
-        monsters_power_up = available_monsters + kingdom_monsters
+        kingdom_monsters = [
+            monster for monster in self.get_kingdom_monsters() if monster.get("allowUpper") == True
+        ]
         
+        monsters_power_up = available_monsters + kingdom_monsters
         print(f"Available Metamon to up power: {len(monsters_power_up)}")
         monsters_power_up = sorted(monsters_power_up, key=lambda x: int(operator.itemgetter("sca")(x)), reverse=True)
-
         for monster in monsters_power_up:
             my_monster_token_id = monster.get("tokenId")
             my_monster_id = monster.get("id")
@@ -459,6 +474,7 @@ class MetamonPlayer:
             my_inte = monster.get("inte")
             my_courage = monster.get("crg")
             my_inv = monster.get("inv")
+            my_power = monster.get("sca")
             attr_up_type = 5
             attr_up_name = "Stealth"
             if my_luk < 50:
@@ -469,32 +485,48 @@ class MetamonPlayer:
             elif my_inv < my_courage and my_inv < 100:
                 attr_up_type = 5
                 attr_up_name = "Stealth"
-            elif my_inte < 200:
+            elif my_inte < my_size and my_inte < 200:
                 attr_up_type = 3
                 attr_up_name = "Wisdom"
             elif my_size < 200:
                 attr_up_type = 4
                 attr_up_name = "Size"
+            if self.is_use_green_potion_only == True and my_power >= 380:
+                continue
+            self.my_power_up(my_monster_id, my_monster_token_id, attr_up_type, attr_up_name, my_power)    
+            if self.is_use_green_potion_only == True:
+                continue
             for i in range(0, 5):
-                power_up_response = self.power_up(my_monster_id, attr_up_type)
-                if power_up_response.get("code") == "SUCCESS":
-                    data = power_up_response.get("data")
-                    if data.get("upperNum") == 0:
-                        print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} failed")
-                    else:
-                        attr_num = data.get("attrNum")
-                        upper_num = data.get("upperNum")
-                        upper_attr_num = data.get("upperAttrNum")
-                        sca = data.get("sca")
-                        upper_sca = data.get("upperSca")
-                        print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
-                        print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
-                elif power_up_response.get("code") == "INSUFFICIENT_PROP_ERROR":
-                    print(f"You don't enough purple potion to power up")
-                    break
-                else:
-                    print(f"Power up unsuccesful")
-         
+               self.my_power_up(my_monster_id, my_monster_token_id, attr_up_type, attr_up_name, my_power)
+                    
+    def my_power_up(self,my_monster_id, my_monster_token_id, attr_up_type, attr_up_name, my_power):
+        
+        if self.is_use_green_potion_only == True:
+            check_power_up_response = self.check_power_up(my_monster_id, attr_up_type)
+            if check_power_up_response.get("code") != "SUCCESS":
+                print(f"Metamon {my_monster_token_id} already powerup. Please try again tommorow !")
+                return
+        power_up_response = self.power_up(my_monster_id, attr_up_type)
+        print(f"gaga {power_up_response}")
+        if power_up_response.get("code") == "SUCCESS":
+            data = power_up_response.get("data")
+            if data.get("upperNum") == 0:
+                print(f"\nUp {attr_up_name} for metamon {my_monster_token_id} failed")
+            else:
+                attr_num = data.get("attrNum")
+                upper_num = data.get("upperNum")
+                upper_attr_num = data.get("upperAttrNum")
+                sca = data.get("sca")
+                upper_sca = data.get("upperSca")
+                print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
+                print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
+        elif power_up_response.get("code") == "INSUFFICIENT_PROP_ERROR":
+            self.is_use_green_potion_only = True
+            print(f"You don't have enough purple potion to power up for Metamon {my_monster_token_id}")
+        elif power_up_response.get("code") == "ATTR_UPPER_PURPLE_EXIST_ERROR":
+            print(f"Metamon {my_monster_token_id} has power up, try tomorrow")
+        else:
+            print(f"Power up unsuccesful")
     def display_battle(self,
                        challenge_record,
                        challenge_monster,
@@ -1032,6 +1064,8 @@ if __name__ == "__main__":
                         action="store_true", default=False)
     parser.add_argument("-powerup", "--auto-power-up", help="Automatically up power for metamon before battle",
                         action="store_true", default=False)
+    parser.add_argument("-uppo", "--use-green-potion-only", help="Automatically up power for metamon before battle without using purple potion",
+                        action="store_true", default=False)
     parser.add_argument("-br","--battle-record", help="Watching record of each battle, Creating log after finish",
                         action="store_true", default=False)
                         
@@ -1074,6 +1108,7 @@ if __name__ == "__main__":
     ti = args.token_id
     buy_purple_potion = args.buy_purple_potion
     add_healthy = args.add_healthy
+    use_green_potion_only = args.use_green_potion_only
     for i, r in wallets.iterrows():
         name = ""
         if hasattr(r,"walletname"):
@@ -1091,7 +1126,8 @@ if __name__ == "__main__":
                             output_stats=args.save_results,
                             average_sca_default = average_sca,
                             find_squad_only = fso,
-                            add_healthy = add_healthy)                 
+                            add_healthy = add_healthy,
+                            is_use_green_potion_only = use_green_potion_only)                 
         if is_kingdom_mode or fso:
             mtm.start_find_squads()
         elif ti:
