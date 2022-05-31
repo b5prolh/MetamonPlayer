@@ -248,7 +248,7 @@ class MetamonPlayer:
         
     def get_squads(self):
         """ Get List of squad ing metamon kingdom"""
-        payload = {'address': self.address, 'teamId': -1, 'pageSize': 9999}
+        payload = {'address': self.address, 'page': 1, 'pageSize': 20, 'orderField': 'monsterNum'}
         headers = {
             "accesstoken": self.token,
         }
@@ -257,6 +257,7 @@ class MetamonPlayer:
         code = response.get("code")
         if code == "SUCCESS":
             squads = response.get("data", {}).get("list", [])
+
         return squads 
         
     def metamon_unlock(self, bpType):
@@ -285,7 +286,7 @@ class MetamonPlayer:
             result = len(available_monsters) + result
         return result
         
-    def join_squad(self, name, teamId):
+    def join_squad(self, name, avg, teamId):
         """Join squad"""
         payload = {'address': self.address, 'teamId': teamId}
         headers = {
@@ -294,10 +295,13 @@ class MetamonPlayer:
         response = post_formdata(payload, JOIN_TEAM_URL, headers)
         code = response.get("code")
         mtm_num = 0
+        if code == "TEAM_JOIN_FAIL":
+            print(f"The squad {name} no longer exists or the preparatory period has ended.")
+            return mtm_num
+            
         if code == "SUCCESS":
             mtm_num = response.get("data", {}).get("monsterNum", 0)
-            
-        print(f"{mtm_num} metamon warriors have joined to {name} kingdom for {''.join(self.name)}")   
+        print(f"{mtm_num} metamon warriors have joined to {name} kingdom with avg {avg} for {''.join(self.name)}")   
         return mtm_num
         
     def start_find_squads(self):
@@ -314,7 +318,9 @@ class MetamonPlayer:
         if mtm_unlock == 0 and self.find_squad_only == False:
             print(f"Not found metamon on metamon kingdom for {''.join(self.name)} wallet")
             return False
-        squads = self.get_squads()
+        squads = [
+            squad for squad in self.get_squads() if squad.get("lockTeam") == False
+        ]
         if not squads:
             print("Not found squads to join. Continue finding...")
             return True
@@ -335,7 +341,7 @@ class MetamonPlayer:
                     average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
-                    self.join_squad(name, teamId)
+                    self.join_squad(name, averageSca, teamId)
                     return True
                 else:
                     if average_sca >= average_sca_default:
@@ -356,15 +362,20 @@ class MetamonPlayer:
                     name = bs.get("name")
                     teamId = bs.get("id")
                     averageSca = 0
+                    averageScaTemp = 0
                     if monsterNum > 0:
                         averageSca = str(round(totalSca / monsterNum, 2))
+                        averageScaTemp = float(averageSca) - average_sca_default
                     if self.find_squad_only == True:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
                     else:
-                        if squad_num_condition <= 100:
+                        if squad_num_condition <= 150:
                             """Join squad"""
-                            self.join_squad(name, teamId)
+                            self.join_squad(name, averageSca, teamId)
+                            return False
+                        elif averageScaTemp >= 30 and squad_num_condition <= 600:
+                            self.join_squad(name, averageSca, teamId)
                             return False
                         else:
                            print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")
@@ -507,7 +518,7 @@ class MetamonPlayer:
                 print(f"Metamon {my_monster_token_id} already powerup. Please try again tommorow !")
                 return
         power_up_response = self.power_up(my_monster_id, attr_up_type)
-        print(f"gaga {power_up_response}")
+        
         if power_up_response.get("code") == "SUCCESS":
             data = power_up_response.get("data")
             if data.get("upperNum") == 0:
