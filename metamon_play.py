@@ -35,12 +35,13 @@ BUY_VALHALLA_URL = f"{BASE_URL}/official-sale/buy"
 ADD_HEALTHY = f"https://metamon-api.radiocaca.com/usm-api/addHealthy?address="
 RESET_EXP = f"{BASE_URL}/resetMonster"
 MONSTER_LVL_60 = f"{BASE_URL}/kingdom/monsterList"
+MONSTER_JOIN_SQUAD_URL = f"{BASE_URL}/kingdom/screenMetamon"
 
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
 
-def post_formdata(payload, url="", headers=None, params=None, is_sleep=True):
+def post_formdata(payload, url="", headers=None, params=None, is_sleep=True, is_payload_json = False):
     """Method to send request to game"""
     files = []
     if headers is None:
@@ -53,7 +54,15 @@ def post_formdata(payload, url="", headers=None, params=None, is_sleep=True):
 
             if is_sleep:
                 sleep(1)
-            response = requests.request("POST",
+            if is_payload_json:
+                response = requests.request("POST",
+                                        url,
+                                        headers=headers,
+                                        json=payload,
+                                        params=params,
+                                        files=files)
+            else:
+                response = requests.request("POST",
                                         url,
                                         headers=headers,
                                         data=payload,
@@ -246,6 +255,7 @@ class MetamonPlayer:
             monsters = response.get("data", [])
         return monsters
         
+        
     def get_squads(self):
         """ Get List of squad ing metamon kingdom"""
         payload = {'address': self.address, 'page': 1, 'pageSize': 20, 'orderField': 'monsterNum'}
@@ -285,15 +295,40 @@ class MetamonPlayer:
             ]
             result = len(available_monsters) + result
         return result
-        
-    def join_squad(self, name, avg, teamId):
-        """Join squad"""
-        payload = {'address': self.address, 'teamId': teamId}
+    
+    def get_join_squad_monsters(self, require_sca, teamId):
+        payload = {'address': self.address, 'scaThreshold': require_sca, 'teamId': teamId, 'pageSize': 99999, 'minSca':'-1', 'nftId':'-1'}
         headers = {
             "accesstoken": self.token,
         }
-        response = post_formdata(payload, JOIN_TEAM_URL, headers)
+        response = post_formdata(payload, MONSTER_JOIN_SQUAD_URL, headers, False)
+        monsters = []
         code = response.get("code")
+
+        if code == "SUCCESS":
+            monsters = response.get("data").get("monsters",[])
+        return monsters
+        
+    def join_squad(self, name, avg, teamId, require_sca):
+        """Join squad"""
+        mtms = self.get_join_squad_monsters(require_sca, teamId)
+        if not mtms:
+            print(f"Not found metamons to join legion {name} with requirement is {require_sca}")
+            return 0
+        metamons = []
+        for metamon in mtms:
+            metamon_ids = {"nftId":metamon.get("id")}
+            metamons.append(metamon_ids)
+        payload = {'address': self.address, 'teamId': teamId, 'metamons':metamons}
+        headers = {
+            "accesstoken": self.token
+        }
+        url = f"{JOIN_TEAM_URL}?address={self.address}"
+        print(url)
+        print(payload)
+        response = post_formdata(payload, url, headers)
+        code = response.get("code")
+        print(response)
         mtm_num = 0
         if code == "TEAM_JOIN_FAIL":
             print(f"The squad {name} no longer exists or the preparatory period has ended.")
@@ -313,6 +348,7 @@ class MetamonPlayer:
         """ Find best squad to join"""
         if self.token == None:
             self.init_token()
+
         mtm_unlock = self.metamon_unlock(-2)
 
         if mtm_unlock == 0 and self.find_squad_only == False:
@@ -337,11 +373,12 @@ class MetamonPlayer:
                 monsterNumMax = int(sq.get("monsterNumMax"))
                 teamId = sq.get("id")
                 average_sca = 0
+                monsterScaThreshold = sq.get("monsterScaThreshold")
                 if monsterNum > 0:
                     average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
-                    self.join_squad(name, averageSca, teamId)
+                    self.join_squad(name, averageSca, teamId, monsterScaThreshold)
                     return True
                 else:
                     if average_sca >= average_sca_default:
@@ -361,6 +398,7 @@ class MetamonPlayer:
                     squad_num_condition = squad_slot - mtm_unlock
                     name = bs.get("name")
                     teamId = bs.get("id")
+                    monsterScaThreshold = bs.get("monsterScaThreshold")
                     averageSca = 0
                     averageScaTemp = 0
                     if monsterNum > 0:
@@ -372,10 +410,10 @@ class MetamonPlayer:
                     else:
                         if squad_num_condition <= 150:
                             """Join squad"""
-                            self.join_squad(name, averageSca, teamId)
+                            self.join_squad(name, averageSca, teamId, monsterScaThreshold)
                             return False
                         elif averageScaTemp >= 30 and squad_num_condition <= 600:
-                            self.join_squad(name, averageSca, teamId)
+                            self.join_squad(name, averageSca, teamId, monsterScaThreshold)
                             return False
                         else:
                            print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")
