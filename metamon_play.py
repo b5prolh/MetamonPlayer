@@ -313,7 +313,6 @@ class MetamonPlayer:
         """Join squad"""
         mtms = self.get_join_squad_monsters(require_sca, teamId)
         if not mtms:
-            print(f"Not found metamons to join legion {name} with requirement is {require_sca}")
             return 0
         metamons = []
         for metamon in mtms:
@@ -378,8 +377,10 @@ class MetamonPlayer:
                     average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
-                    self.join_squad(name, averageSca, teamId, monsterScaThreshold)
-                    return True
+                    mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
+                    if mtm_num > 0:
+                        return True
+                    print(f"Not found squads. Continue finding...")
                 else:
                     if average_sca >= average_sca_default:
                         best_squads.append(sq)
@@ -408,13 +409,12 @@ class MetamonPlayer:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
                     else:
-                        if squad_num_condition <= 150:
+                        if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 600):
                             """Join squad"""
-                            mtm_join = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
-                            return True
-                        elif averageScaTemp >= 30 and squad_num_condition <= 600:
-                            self.join_squad(name, averageSca, teamId, monsterScaThreshold)
-                            return True
+                            mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
+                            if mtm_num > 0:
+                                return True
+                            print(f"Not found squads. Continue finding...")
                         else:
                            print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")
                            return True
