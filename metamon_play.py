@@ -147,7 +147,8 @@ class MetamonPlayer:
                  average_sca = 0,
                  find_squad_only = False,
                  add_healthy = False,
-                 is_use_green_potion_only = False):
+                 is_use_green_potion_only = False,
+                 squad_dev_only = False):
         self.no_enough_money = False
         self.output_stats = output_stats
         self.total_bp_num = 0
@@ -173,6 +174,7 @@ class MetamonPlayer:
         self.find_squad_only = find_squad_only
         self.add_healthy = add_healthy
         self.is_use_green_potion_only = is_use_green_potion_only
+        self.squad_dev_only = squad_dev_only
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
         payload = {"address": self.address, "sign": self.sign, "msg": self.msg, "network": "1", "clientType": "MetaMask"}
@@ -309,9 +311,8 @@ class MetamonPlayer:
             monsters = response.get("data").get("monsters",[])
         return monsters
         
-    def join_squad(self, name, avg, teamId, require_sca):
+    def join_squad(self, name, avg, teamId, mtms):
         """Join squad"""
-        mtms = self.get_join_squad_monsters(require_sca, teamId)
         if not mtms:
             return 0
         metamons = []
@@ -323,7 +324,7 @@ class MetamonPlayer:
             "accesstoken": self.token
         }
         url = f"{JOIN_TEAM_URL}?address={self.address}"
-        response = post_formdata(payload, url, headers)
+        response = post_formdata(payload, url, headers, is_payload_json = True)
         code = response.get("code")
         print(response)
         mtm_num = 0
@@ -361,6 +362,7 @@ class MetamonPlayer:
             average_sca_default = self.average_sca_default[0]
             best_squads = []
             i = 0
+            mtms = []
             for sq in squads:
                 totalSca = 0
                 i = i + 1
@@ -372,11 +374,14 @@ class MetamonPlayer:
                 teamId = sq.get("id")
                 average_sca = 0
                 monsterScaThreshold = sq.get("monsterScaThreshold")
+                owner = sq.get("owner")
+                if (owner != "0x0000000000000000000000000000000000000000" and self.squad_dev_only):
+                        continue
                 if monsterNum > 0:
                     average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
-                    mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
+                    mtm_num = self.join_squad(name, averageSca, teamId, mtms)
                     if mtm_num > 0:
                         return True
                     if i == len(squads) - 1:  
@@ -405,6 +410,7 @@ class MetamonPlayer:
                     averageSca = 0
                     averageScaTemp = 0
                     owner = bs.get("owner")
+                    mtms = self.get_join_squad_monsters(monsterScaThreshold, teamId)
                     if monsterNum > 0:
                         averageSca = str(round(totalSca / monsterNum, 2))
                         averageScaTemp = float(averageSca) - average_sca_default
@@ -412,9 +418,12 @@ class MetamonPlayer:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
                     else:
+                        if len(mtms) <= 0:
+                            print(f"Squad {name} require {monsterScaThreshold} power, yout don't have metamon to join. Continue finding...")
+                            continue
                         if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 600 and owner == "0x0000000000000000000000000000000000000000"):
                             """Join squad"""
-                            mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
+                            mtm_num = self.join_squad(name, averageSca, teamId, mtms)
                             if mtm_num > 0:
                                 return True
                             if i == len(best_squads) - 1:  
@@ -1135,8 +1144,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-buy","--buy-purple-potion", help="Buy purple potion equal with number of metamon in metamon kingdom", action="store_true", default=False)                         
     
-    parser.add_argument("-ah","--add-healthy", help="Automatically adding healthy for metamon have healthy below 90", action="store_true", default=False)                             
+    parser.add_argument("-ah","--add-healthy", help="Automatically adding healthy for metamon have healthy below 90", action="store_true", default=False)
     
+    parser.add_argument("-sqdev","--squads-dev", help="Join squads dev only", action="store_true", default=False)
     args = parser.parse_args()
 
     if not os.path.exists(args.input_tsv):
@@ -1180,7 +1190,8 @@ if __name__ == "__main__":
                             average_sca_default = average_sca,
                             find_squad_only = fso,
                             add_healthy = add_healthy,
-                            is_use_green_potion_only = use_green_potion_only)                 
+                            is_use_green_potion_only = use_green_potion_only,
+                            squad_dev_only = args.squads_dev)                 
         if is_kingdom_mode or fso:
             mtm.start_find_squads()
         elif ti:
