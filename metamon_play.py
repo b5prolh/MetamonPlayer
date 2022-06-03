@@ -311,7 +311,7 @@ class MetamonPlayer:
         
     def join_squad(self, name, avg, teamId, require_sca):
         """Join squad"""
-        mtms = self.get_join_squad_monsters(require_sca, teamId)
+        mtms = self.get_join_squad_monsters(require_sca, teamId, False)
         if not mtms:
             return 0
         metamons = []
@@ -323,8 +323,6 @@ class MetamonPlayer:
             "accesstoken": self.token
         }
         url = f"{JOIN_TEAM_URL}?address={self.address}"
-        print(url)
-        print(payload)
         response = post_formdata(payload, url, headers)
         code = response.get("code")
         print(response)
@@ -362,9 +360,10 @@ class MetamonPlayer:
         else:
             average_sca_default = self.average_sca_default[0]
             best_squads = []
+            i = 0
             for sq in squads:
                 totalSca = 0
-                
+                i = i + 1
                 if sq.get("totalSca") is not None:
                     totalSca = int(sq.get("totalSca"))
                 name = sq.get("name")
@@ -380,7 +379,8 @@ class MetamonPlayer:
                     mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
                     if mtm_num > 0:
                         return True
-                    print(f"Not found squads. Continue finding...")
+                    if i == len(squads) - 1:  
+                        print(f"Not found squads. Continue finding...")
                 else:
                     if average_sca >= average_sca_default:
                         best_squads.append(sq)
@@ -389,7 +389,9 @@ class MetamonPlayer:
                 return True
             else:
                 best_squads = sorted(best_squads, key=lambda x: (int(operator.itemgetter("totalSca")(x)), int(operator.itemgetter("monsterNumRarity")(x))), reverse=True)
+                i = 0
                 for bs in best_squads:
+                    i = i + 1
                     monsterNumMax = bs.get("monsterNumMax")
                     monsterNum = bs.get("monsterNum")
                     totalSca = 0
@@ -414,7 +416,8 @@ class MetamonPlayer:
                             mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
                             if mtm_num > 0:
                                 return True
-                            print(f"Not found squads. Continue finding...")
+                            if i == len(best_squads) - 1:  
+                                print(f"Not found squads. Continue finding...")
                         else:
                            print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")
                            return True
