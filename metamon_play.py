@@ -311,7 +311,7 @@ class MetamonPlayer:
         
     def join_squad(self, name, avg, teamId, require_sca):
         """Join squad"""
-        mtms = self.get_join_squad_monsters(require_sca, teamId, False)
+        mtms = self.get_join_squad_monsters(require_sca, teamId)
         if not mtms:
             return 0
         metamons = []
@@ -404,6 +404,7 @@ class MetamonPlayer:
                     monsterScaThreshold = bs.get("monsterScaThreshold")
                     averageSca = 0
                     averageScaTemp = 0
+                    owner = bs.get("owner")
                     if monsterNum > 0:
                         averageSca = str(round(totalSca / monsterNum, 2))
                         averageScaTemp = float(averageSca) - average_sca_default
@@ -411,7 +412,7 @@ class MetamonPlayer:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
                     else:
-                        if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 600):
+                        if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 600 and owner == "0x0000000000000000000000000000000000000000"):
                             """Join squad"""
                             mtm_num = self.join_squad(name, averageSca, teamId, monsterScaThreshold)
                             if mtm_num > 0:
