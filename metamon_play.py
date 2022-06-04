@@ -428,6 +428,7 @@ class MetamonPlayer:
                                 return True
                             if i == len(best_squads) - 1:  
                                 print(f"Not found squads. Continue finding...")
+                                return True
                         else:
                            print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")
                            return True
