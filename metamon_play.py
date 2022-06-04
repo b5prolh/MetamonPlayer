@@ -420,6 +420,8 @@ class MetamonPlayer:
                     else:
                         if len(mtms) <= 0:
                             print(f"Squad {name} require {monsterScaThreshold} power, yout don't have metamon to join. Continue finding...")
+                            if i == len(best_squads) - 1:
+                               return True 
                             continue
                         if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 600 and owner == "0x0000000000000000000000000000000000000000"):
                             """Join squad"""
