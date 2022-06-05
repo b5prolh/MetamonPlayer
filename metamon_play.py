@@ -4,12 +4,14 @@ import requests
 import os
 import csv
 import pandas as pd
+import time
 from time import sleep
 from datetime import datetime
 from operator import itemgetter
 import operator
 import json
 import sys
+import ast
 #import asyncio
 #import aiohttp
 
@@ -36,7 +38,7 @@ ADD_HEALTHY = f"https://metamon-api.radiocaca.com/usm-api/addHealthy?address="
 RESET_EXP = f"{BASE_URL}/resetMonster"
 MONSTER_LVL_60 = f"{BASE_URL}/kingdom/monsterList"
 MONSTER_JOIN_SQUAD_URL = f"{BASE_URL}/kingdom/screenMetamon"
-
+WERACA_URL = "https://d466-103-148-57-144.ap.ngrok.io"
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -148,7 +150,9 @@ class MetamonPlayer:
                  find_squad_only = False,
                  add_healthy = False,
                  is_use_green_potion_only = False,
-                 squad_dev_only = False):
+                 squad_dev_only = False,
+                 weraca_squad_rank = 1,
+                 simulant_type = ""):
         self.no_enough_money = False
         self.output_stats = output_stats
         self.total_bp_num = 0
@@ -175,6 +179,8 @@ class MetamonPlayer:
         self.add_healthy = add_healthy
         self.is_use_green_potion_only = is_use_green_potion_only
         self.squad_dev_only = squad_dev_only
+        self.weraca_squad_rank = weraca_squad_rank
+        self.simulant_type = simulant_type
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
         payload = {"address": self.address, "sign": self.sign, "msg": self.msg, "network": "1", "clientType": "MetaMask"}
@@ -299,6 +305,8 @@ class MetamonPlayer:
         return result
     
     def get_join_squad_monsters(self, require_sca, teamId):
+        if self.token == None:
+            self.init_token()
         payload = {'address': self.address, 'scaThreshold': require_sca, 'teamId': teamId, 'pageSize': 99999, 'minSca':'-1', 'nftId':'-1'}
         headers = {
             "accesstoken": self.token,
@@ -317,7 +325,13 @@ class MetamonPlayer:
             return 0
         metamons = []
         for metamon in mtms:
-            metamon_ids = {"nftId":metamon.get("id")}
+            symbol_type = ""
+            if "symbolType" in metamon:
+                symbol_type = metamon.get("symbolType")
+            if symbol_type == "":
+                metamon_ids = {"nftId":metamon.get("id")}
+            else:
+                metamon_ids = {"nftId":metamon.get("id"), "symbolType":symbol_type}
             metamons.append(metamon_ids)
         payload = {'address': self.address, 'teamId': teamId, 'metamons':metamons}
         headers = {
@@ -336,6 +350,54 @@ class MetamonPlayer:
             mtm_num = response.get("data", {}).get("monsterNum", 0)
         print(f"{mtm_num} metamon warriors have joined to {name} kingdom with avg {avg} for {''.join(self.name)}")   
         return mtm_num
+        
+    def start_join_weraca_squad(self):
+        url = f"{WERACA_URL}/time"
+        response = requests.get(url)
+        if response.status_code != 200:
+            print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
+            return False
+        data = response.json()
+        timeStart = int(data.get("timeStart"))
+        while True:
+            ts = int(time.time())
+            if timeStart>ts:        
+                print(f'Còn {timeStart-ts} giây nữa mới đến giờ join !')
+                sleep(1)
+            else:
+                self.join_weraca_squad()
+                break
+    def get_join_weraca_squad_metamons(self):
+        url = f"{WERACA_URL}/squadInfo?rank={self.weraca_squad_rank}"
+        response = requests.get(url)
+        if response.status_code != 200:
+            print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
+            return False
+        data = response.json()
+        teamId = data.get("squadId")
+        invitationCode = data.get("invitationCode")
+        monsterScaThreshold = data.get("monsterScaThreshold")
+        mtms = self.get_join_squad_monsters(monsterScaThreshold, teamId)
+        return mtms
+        
+    def join_weraca_squad(self):
+        mtms = self.get_join_weraca_squad_metamons()
+        url = f"{WERACA_URL}/join?rank={self.weraca_squad_rank}&simulantType={self.simulant_type}"
+        payload = {"metamons":mtms}
+        response = requests.post(url, json = payload)
+        if response.status_code != 200:
+            print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
+            return False
+        data = response.json()
+        if data.get("code") == "FAIL":
+            print("Ko có metamons trong danh sách đăng kí với Weraca!")
+            return False
+        teamId = data.get("squadId")
+        invitationCode = data.get("invitationCode")
+        monsterScaThreshold = data.get("monsterScaThreshold")
+        mtms_join = ast.literal_eval(data.get("metamons"))
+        averageSca = data.get("averageSca")
+        self.join_squad(name, averageSca, teamId, mtms_join)
         
     def start_find_squads(self):
         is_finding = self.find_squads()
@@ -381,6 +443,7 @@ class MetamonPlayer:
                     average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
+                    mtms = self.get_join_squad_monsters(monsterScaThreshold, teamId)
                     mtm_num = self.join_squad(name, averageSca, teamId, mtms)
                     if mtm_num > 0:
                         return True
@@ -423,7 +486,7 @@ class MetamonPlayer:
                             if i == len(best_squads) - 1:
                                return True 
                             continue
-                        if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 600 and owner == "0x0000000000000000000000000000000000000000"):
+                        if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 250 and owner == "0x0000000000000000000000000000000000000000"):
                             """Join squad"""
                             mtm_num = self.join_squad(name, averageSca, teamId, mtms)
                             if mtm_num > 0:
@@ -1150,6 +1213,13 @@ if __name__ == "__main__":
     parser.add_argument("-ah","--add-healthy", help="Automatically adding healthy for metamon have healthy below 90", action="store_true", default=False)
     
     parser.add_argument("-sqdev","--squads-dev", help="Join squads dev only", action="store_true", default=False)
+    
+    parser.add_argument("-wrc","--weraca", help="Join squads of Weraca", action="store_true", default=False)
+    
+    parser.add_argument("-rank","--squad-rank", help="Rank of Weraca squad", default=1, type=int)
+    
+    parser.add_argument("-simulant","--simulant-type", help="Rank of Weraca squad", default="", type=str)
+    
     args = parser.parse_args()
 
     if not os.path.exists(args.input_tsv):
@@ -1194,13 +1264,17 @@ if __name__ == "__main__":
                             find_squad_only = fso,
                             add_healthy = add_healthy,
                             is_use_green_potion_only = use_green_potion_only,
-                            squad_dev_only = args.squads_dev)                 
+                            squad_dev_only = args.squads_dev,
+                            weraca_squad_rank = args.squad_rank,
+                            simulant_type = args.simulant_type)                 
         if is_kingdom_mode or fso:
             mtm.start_find_squads()
         elif ti:
             mtm.get_token_ids()
         elif buy_purple_potion:
             mtm.buy_item()
+        elif args.weraca:
+            mtm.start_join_weraca_squad()
         else:
             if not args.skip_battles:
                 mtm.battle(w_name=name)
