@@ -409,7 +409,7 @@ class MetamonPlayer:
         if self.token == None:
             self.init_token()
 
-        mtm_unlock = self.metamon_unlock(-2)
+        mtm_unlock = int(self.metamon_unlock(-2))
 
         if mtm_unlock == 0 and self.find_squad_only == False:
             print(f"Not found metamon on metamon kingdom for {''.join(self.name)} wallet")
@@ -460,8 +460,8 @@ class MetamonPlayer:
                 i = 0
                 for bs in best_squads:
                     i = i + 1
-                    monsterNumMax = bs.get("monsterNumMax")
-                    monsterNum = bs.get("monsterNum")
+                    monsterNumMax = int(bs.get("monsterNumMax"))
+                    monsterNum = int(bs.get("monsterNum"))
                     totalSca = 0
                     if bs.get("totalSca") is not None:
                         totalSca = int(bs.get("totalSca"))
@@ -1000,7 +1000,7 @@ class MetamonPlayer:
     def get_wallet_properties(self):
         """ Obtain list of metamons on the wallet"""
 
-        payload = {"address": self.address}
+        payload = {"address": self.address, "orderType":"-1"}
         headers = {
             "accesstoken": self.token,
         }
@@ -1025,7 +1025,6 @@ class MetamonPlayer:
         mtm_stats_file_name = f"{w_name}_stats.tsv"
         self.init_token()
         
-        monsters = self.list_monsters()
         wallet_monsters = self.get_wallet_properties()
 
         available_monsters = [
