@@ -352,17 +352,18 @@ class MetamonPlayer:
         return mtm_num
         
     def start_join_weraca_squad(self):
-        url = f"{WERACA_URL}/time"
+        url = f"{WERACA_URL}/time?rank={self.weraca_squad_rank}"
         response = requests.get(url)
         if response.status_code != 200:
             print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
             return False
         data = response.json()
         timeStart = int(data.get("timeStart"))
+        date_time_start = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(timeStart))
         while True:
             ts = int(time.time())
             if timeStart>ts:        
-                print(f'Còn {timeStart-ts} giây nữa mới đến giờ join !')
+                print(f'Sẽ join squad dev vào lúc {date_time_start}. Còn {timeStart-ts} giây nữa mới đến giờ join !')
                 sleep(1)
             else:
                 self.join_weraca_squad()
