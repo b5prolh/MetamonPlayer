@@ -358,7 +358,11 @@ class MetamonPlayer:
             print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
             return False
         data = response.json()
-        timeStart = int(data.get("timeStart"))
+        timeStart = data.get("timeStart")
+        if timeStart == "":
+            timeStart = 0
+        else:
+            timeStart = int(timeStart)
         date_time_start = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(timeStart))
         while True:
             ts = int(time.time())
