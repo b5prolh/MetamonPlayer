@@ -38,6 +38,8 @@ ADD_HEALTHY = f"https://metamon-api.radiocaca.com/usm-api/addHealthy?address="
 RESET_EXP = f"{BASE_URL}/resetMonster"
 MONSTER_LVL_60 = f"{BASE_URL}/kingdom/monsterList"
 MONSTER_JOIN_SQUAD_URL = f"{BASE_URL}/kingdom/screenMetamon"
+CHECK_PASSWORD_URL = f"{BASE_URL}/kingdom/checkPwd"
+
 WERACA_URL = "https://d466-103-148-57-144.ap.ngrok.io"
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
@@ -319,7 +321,7 @@ class MetamonPlayer:
             monsters = response.get("data").get("monsters",[])
         return monsters
         
-    def join_squad(self, name, avg, teamId, mtms):
+    def join_squad(self, name, avg, teamId, mtms, invitationCode=""):
         """Join squad"""
         if not mtms:
             return 0
@@ -333,7 +335,10 @@ class MetamonPlayer:
             else:
                 metamon_ids = {"nftId":metamon.get("id"), "symbolType":symbol_type}
             metamons.append(metamon_ids)
-        payload = {'address': self.address, 'teamId': teamId, 'metamons':metamons}
+        if invitationCode == "":
+            payload = {'address': self.address, 'teamId': teamId, 'metamons':metamons}
+        else:
+            payload = {'address': self.address, 'teamId': teamId, 'metamons':metamons, 'joinPassword':invitationCode}
         headers = {
             "accesstoken": self.token
         }
@@ -379,6 +384,7 @@ class MetamonPlayer:
             print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
             return False
         data = response.json()
+        print(data)
         teamId = data.get("squadId")
         invitationCode = data.get("invitationCode")
         monsterScaThreshold = data.get("monsterScaThreshold")
@@ -399,11 +405,30 @@ class MetamonPlayer:
             return False
         teamId = data.get("squadId")
         invitationCode = data.get("invitationCode")
+        teamName = date.get("squadName")
+        password_is_correct = self.weraca_squad_check_password(teamId, invitationCode)
+        if password_is_correct == False:
+           print ("Password is wrong. Contact your administrator to get new password")
+           return
         monsterScaThreshold = data.get("monsterScaThreshold")
         mtms_join = ast.literal_eval(data.get("metamons"))
         averageSca = data.get("averageSca")
-        self.join_squad(name, averageSca, teamId, mtms_join)
+
+        self.join_squad(teamName, averageSca, teamId, mtms_join, invitationCode)
         
+    def weraca_squad_check_password(self, teamId, inviteCode):
+        if self.token == None:
+            self.init_token()
+        headers = {
+            "accesstoken": self.token
+        }
+        payload = {'address': self.address, 'teamId': teamId, 'joinPassword':inviteCode}
+        print(inviteCode)
+        response = post_formdata(payload, CHECK_PASSWORD_URL, headers)
+        print(response)
+        if response.get("code") == "SUCCESS":
+            return True
+        return False
     def start_find_squads(self):
         is_finding = self.find_squads()
         while(is_finding):
