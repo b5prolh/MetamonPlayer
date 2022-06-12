@@ -405,7 +405,7 @@ class MetamonPlayer:
             return False
         teamId = data.get("squadId")
         invitationCode = data.get("invitationCode")
-        teamName = date.get("squadName")
+        teamName = data.get("squadName")
         password_is_correct = self.weraca_squad_check_password(teamId, invitationCode)
         if password_is_correct == False:
            print ("Password is wrong. Contact your administrator to get new password")
