@@ -12,9 +12,9 @@ import operator
 import json
 import sys
 import ast
+import pyotp
 #import asyncio
 #import aiohttp
-
 
 # URLs to make api calls
 BASE_URL = "https://metamon-api.radiocaca.com/usm-api"
@@ -39,8 +39,8 @@ RESET_EXP = f"{BASE_URL}/resetMonster"
 MONSTER_LVL_60 = f"{BASE_URL}/kingdom/monsterList"
 MONSTER_JOIN_SQUAD_URL = f"{BASE_URL}/kingdom/screenMetamon"
 CHECK_PASSWORD_URL = f"{BASE_URL}/kingdom/checkPwd"
-
-WERACA_URL = "https://d466-103-148-57-144.ap.ngrok.io"
+CHECK_2FA_URL = f"{BASE_URL}/owner-google-auth/check"
+WERACA_URL = "https://fac7-2402-800-61ae-d21e-7d9c-ed6a-cd2a-10fa.ap.ngrok.io"
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -154,7 +154,9 @@ class MetamonPlayer:
                  is_use_green_potion_only = False,
                  squad_dev_only = False,
                  weraca_squad_rank = 1,
-                 simulant_type = ""):
+                 simulant_type = "",
+                 optimal_powerup = False,
+                 key_2fa = ""):
         self.no_enough_money = False
         self.output_stats = output_stats
         self.total_bp_num = 0
@@ -183,6 +185,28 @@ class MetamonPlayer:
         self.squad_dev_only = squad_dev_only
         self.weraca_squad_rank = weraca_squad_rank
         self.simulant_type = simulant_type
+        self.optimal_powerup = optimal_powerup
+        self.key_2fa = key_2fa
+        
+    def check_2fa(self):
+        while(True):
+            try:
+                code = pyotp.TOTP(self.key_2fa).now()
+                print(f"Verify Code: {code}")
+                payload = {"address": self.address, "code": code}
+                headers = {
+                    "accessToken": self.token,
+                }
+                response = post_formdata(payload, CHECK_2FA_URL, headers)
+                print(response)
+                if response.get("code") == "SUCCESS":
+                    print ("Verify success")
+                else:
+                    print("Verify Fail")
+                break
+            except Exception as e:
+                print(e)
+        
     def init_token(self):
         """Obtain token for game session to perform battles and other actions"""
         payload = {"address": self.address, "sign": self.sign, "msg": self.msg, "network": "1", "clientType": "MetaMask"}
@@ -191,13 +215,19 @@ class MetamonPlayer:
             sys.stderr.write("Login failed, token is not initialized. Terminating\n")
             sys.exit(-1)
         self.token = response.get("data").get("accessToken")
+        print(self.key_2fa)
+        if self.key_2fa == "":
+            return
+        self.check_2fa()
         
     def get_token_ids(self):
         self.init_token()
         print("Metamons token id are exporting ...")
         mtms = self.get_wallet_properties()
+        mtms_kingdom = self.get_kingdom_monsters()
+        monsters = mtms_kingdom + mtms
         mtm_stats = []
-        for mtm in mtms:
+        for mtm in monsters:
             token_id = mtm.get("tokenId")
             print(f"Export Metamon Token Id {token_id}")
             level = mtm.get("level")
@@ -422,7 +452,7 @@ class MetamonPlayer:
         headers = {
             "accesstoken": self.token
         }
-        payload = {'address': self.address, 'teamId': teamId, 'joinPassword':inviteCode}
+        payload = {'address': self.address, 'teamId': teamId, 'joinPassword':inviteCode})
         response = post_formdata(payload, CHECK_PASSWORD_URL, headers)
         if response.get("code") == "SUCCESS":
             return True
@@ -462,13 +492,11 @@ class MetamonPlayer:
                 monsterNum = int(sq.get("monsterNum"))
                 monsterNumMax = int(sq.get("monsterNumMax"))
                 teamId = sq.get("id")
-                average_sca = 0
+                average_sca = int(sq.get("averageSca"))
                 monsterScaThreshold = sq.get("monsterScaThreshold")
                 owner = sq.get("owner")
                 if (owner != "0x0000000000000000000000000000000000000000" and self.squad_dev_only):
                         continue
-                if monsterNum > 0:
-                    average_sca = totalSca / monsterNum
                 if mtm_unlock >= monsterNumMax and monsterNum == 0:
                     """Join squad"""
                     mtms = self.get_join_squad_monsters(monsterScaThreshold, teamId)
@@ -498,13 +526,11 @@ class MetamonPlayer:
                     name = bs.get("name")
                     teamId = bs.get("id")
                     monsterScaThreshold = bs.get("monsterScaThreshold")
-                    averageSca = 0
+                    averageSca = bs.get("averageSca")
                     averageScaTemp = 0
                     owner = bs.get("owner")
                     mtms = self.get_join_squad_monsters(monsterScaThreshold, teamId)
-                    if monsterNum > 0:
-                        averageSca = str(round(totalSca / monsterNum, 2))
-                        averageScaTemp = float(averageSca) - average_sca_default
+                    averageScaTemp = float(averageSca) - average_sca_default
                     if self.find_squad_only == True:
                         print(f"Found kingdom {teamId} {name} with average power {averageSca} have {monsterNum} metamon warriors. Continue finding...")  
                         return True                          
@@ -514,7 +540,7 @@ class MetamonPlayer:
                             if i == len(best_squads) - 1:
                                return True 
                             continue
-                        if squad_num_condition <= 150 or (averageScaTemp >= 30 and squad_num_condition <= 250 and owner == "0x0000000000000000000000000000000000000000"):
+                        if squad_num_condition <= 150 or (averageScaTemp >= 50 and squad_num_condition <= 250 and owner == "0x0000000000000000000000000000000000000000"):
                             """Join squad"""
                             mtm_num = self.join_squad(name, averageSca, teamId, mtms)
                             if mtm_num > 0:
@@ -620,9 +646,13 @@ class MetamonPlayer:
         ]
         
         monsters_power_up = available_monsters + kingdom_monsters
+        monsters_use_purple_potion = int(len(kingdom_monsters)/10)
+        count = 0
         print(f"Available Metamon to up power: {len(monsters_power_up)}")
+        print(f"Available Metamon use purple potion to have best benefit: {monsters_use_purple_potion}")
         monsters_power_up = sorted(monsters_power_up, key=lambda x: int(operator.itemgetter("sca")(x)), reverse=True)
         for monster in monsters_power_up:
+            count = count + 1
             my_monster_token_id = monster.get("tokenId")
             my_monster_id = monster.get("id")
             my_luk = monster.get("luk")
@@ -646,10 +676,15 @@ class MetamonPlayer:
                 attr_up_name = "Wisdom"
             elif my_size < 200:
                 attr_up_type = 4
-                attr_up_name = "Size"
+                attr_up_name = "Size"  
             if self.is_use_green_potion_only == True and my_power >= 380:
                 continue
-            self.my_power_up(my_monster_id, my_monster_token_id, attr_up_type, attr_up_name, my_power)    
+            print(f"count monster {count}, monster up {monsters_use_purple_potion} {self.optimal_powerup} with power {my_power}")
+            if count > monsters_use_purple_potion and self.optimal_powerup == True and my_power >= 380:
+                print(f"Khong up nua vi cout = {count},  monster up = {monsters_use_purple_potion}")
+                self.is_use_green_potion_only = True
+                continue
+            my_power = self.my_power_up(my_monster_id, my_monster_token_id, attr_up_type, attr_up_name, my_power)
             if self.is_use_green_potion_only == True:
                 continue
             for i in range(0, 5):
@@ -661,7 +696,7 @@ class MetamonPlayer:
             check_power_up_response = self.check_power_up(my_monster_id, attr_up_type)
             if check_power_up_response.get("code") != "SUCCESS":
                 print(f"Metamon {my_monster_token_id} already powerup. Please try again tommorow !")
-                return
+                return my_power
         power_up_response = self.power_up(my_monster_id, attr_up_type)
         
         if power_up_response.get("code") == "SUCCESS":
@@ -676,6 +711,7 @@ class MetamonPlayer:
                 upper_sca = data.get("upperSca")
                 print(f"{attr_up_name} of metamon {my_monster_token_id} +{upper_num}: {attr_num} -> {upper_attr_num}")
                 print(f"Score of metamon {my_monster_token_id}: {sca} -> {upper_sca}")
+                my_power = my_power + int(upper_num)
         elif power_up_response.get("code") == "INSUFFICIENT_PROP_ERROR":
             self.is_use_green_potion_only = True
             print(f"You don't have enough purple potion to power up for Metamon {my_monster_token_id}")
@@ -683,6 +719,7 @@ class MetamonPlayer:
             print(f"Metamon {my_monster_token_id} has power up, try tomorrow")
         else:
             print(f"Power up unsuccesful")
+        return my_power
     def display_battle(self,
                        challenge_record,
                        challenge_monster,
@@ -1219,6 +1256,8 @@ if __name__ == "__main__":
                         action="store_true", default=False)
     parser.add_argument("-powerup", "--auto-power-up", help="Automatically up power for metamon before battle",
                         action="store_true", default=False)
+    parser.add_argument("-optimal", "--powerup-optimal", help="Automatically up power for metamon with purple potion for free",
+                        action="store_true", default=False)
     parser.add_argument("-uppo", "--use-green-potion-only", help="Automatically up power for metamon before battle without using purple potion",
                         action="store_true", default=False)
     parser.add_argument("-br","--battle-record", help="Watching record of each battle, Creating log after finish",
@@ -1246,7 +1285,7 @@ if __name__ == "__main__":
     parser.add_argument("-rank","--squad-rank", help="Rank of Weraca squad", default=1, type=int)
     
     parser.add_argument("-simulant","--simulant-type", help="Rank of Weraca squad", default="", type=str)
-    
+
     args = parser.parse_args()
 
     if not os.path.exists(args.input_tsv):
@@ -1274,8 +1313,11 @@ if __name__ == "__main__":
     use_green_potion_only = args.use_green_potion_only
     for i, r in wallets.iterrows():
         name = ""
+        key = ""
         if hasattr(r,"walletname"):
             name = r.walletname
+        if hasattr(r, "key"):
+            key = r.key
         mtm = MetamonPlayer(address=r.address,
                             sign=r.sign,
                             msg=r.msg,
@@ -1293,7 +1335,9 @@ if __name__ == "__main__":
                             is_use_green_potion_only = use_green_potion_only,
                             squad_dev_only = args.squads_dev,
                             weraca_squad_rank = args.squad_rank,
-                            simulant_type = args.simulant_type)                 
+                            simulant_type = args.simulant_type,
+                            optimal_powerup = args.powerup_optimal,
+                            key_2fa = key)                 
         if is_kingdom_mode or fso:
             mtm.start_find_squads()
         elif ti:
