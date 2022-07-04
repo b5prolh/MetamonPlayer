@@ -79,8 +79,8 @@ default is "wallets.tsv" in same dir where you run it).
 
 File should have 4 columns tab separated (tsv):
 
-    name    address sign    msg			key
-    Wallet1 0x123.. 0x23... LogIn-...	AuthenKey
+    name    address sign    msg		key
+    Wallet1 0x123.. 0x23... LogIn-...AuthenKey
 	
 <img src="screenshots/wallet.png" />	
 
