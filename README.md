@@ -79,11 +79,17 @@ default is "wallets.tsv" in same dir where you run it).
 
 File should have 4 columns tab separated (tsv):
 
-    name    address sign    msg
-    Wallet1 0x123.. 0x23... LogIn-...
+    name    address sign    msg			key
+    Wallet1 0x123.. 0x23... LogIn-...	AuthenKey
+	
+<img src="screenshots/wallet.png" />	
 
 Name is custom, choose what you want. If you save 
 stats to file it will be used for name of that file.
+Key is Google Authen Key.
+
+<img src="screenshots/key.png" />	
+
 If you have multiple wallets you can add several rows
 to this tsv file.
 
