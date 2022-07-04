@@ -452,7 +452,7 @@ class MetamonPlayer:
         headers = {
             "accesstoken": self.token
         }
-        payload = {'address': self.address, 'teamId': teamId, 'joinPassword':inviteCode})
+        payload = {'address': self.address, 'teamId': teamId, 'joinPassword':inviteCode}
         response = post_formdata(payload, CHECK_PASSWORD_URL, headers)
         if response.get("code") == "SUCCESS":
             return True
