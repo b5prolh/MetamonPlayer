@@ -215,7 +215,6 @@ class MetamonPlayer:
             sys.stderr.write("Login failed, token is not initialized. Terminating\n")
             sys.exit(-1)
         self.token = response.get("data").get("accessToken")
-        print(self.key_2fa)
         if self.key_2fa == "":
             return
         self.check_2fa()
@@ -529,6 +528,7 @@ class MetamonPlayer:
                     averageSca = bs.get("averageSca")
                     averageScaTemp = 0
                     owner = bs.get("owner")
+                    ranking = bs.get("ranking")
                     mtms = self.get_join_squad_monsters(monsterScaThreshold, teamId)
                     averageScaTemp = float(averageSca) - average_sca_default
                     if self.find_squad_only == True:
@@ -540,7 +540,7 @@ class MetamonPlayer:
                             if i == len(best_squads) - 1:
                                return True 
                             continue
-                        if squad_num_condition <= 150 or (averageScaTemp >= 50 and squad_num_condition <= 250 and owner == "0x0000000000000000000000000000000000000000"):
+                        if squad_num_condition <= 150 and ranking == 0 or (averageScaTemp >= 50 and squad_num_condition <= 250 and ranking == 0 and owner == "0x0000000000000000000000000000000000000000"):
                             """Join squad"""
                             mtm_num = self.join_squad(name, averageSca, teamId, mtms)
                             if mtm_num > 0:
