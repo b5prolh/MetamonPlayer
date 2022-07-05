@@ -47,6 +47,8 @@ virtual environment activated and run following
 command
 
     pip install tqdm requests pandas argparse
+    
+    pip install pyotp
 
 to install all necessary packages
 
