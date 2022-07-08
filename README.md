@@ -47,8 +47,12 @@ virtual environment activated and run following
 command
 
     pip install tqdm requests pandas argparse
-
+   
 to install all necessary packages
+
+install library for 2fa by google authentication:
+
+    pip install pyotp
 
 ## Prepare wallet(s) information
 
