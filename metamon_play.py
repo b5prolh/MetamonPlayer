@@ -40,7 +40,7 @@ MONSTER_LVL_60 = f"{BASE_URL}/kingdom/monsterList"
 MONSTER_JOIN_SQUAD_URL = f"{BASE_URL}/kingdom/screenMetamon"
 CHECK_PASSWORD_URL = f"{BASE_URL}/kingdom/checkPwd"
 CHECK_2FA_URL = f"{BASE_URL}/owner-google-auth/check"
-WERACA_URL = "https://fac7-2402-800-61ae-d21e-7d9c-ed6a-cd2a-10fa.ap.ngrok.io"
+WERACA_URL = "https://96eb-103-148-57-144.ap.ngrok.io"
 def datetime_now():
     return datetime.now().strftime("%m/%d/%Y %H:%M:%S")
 
@@ -388,9 +388,13 @@ class MetamonPlayer:
     def start_join_weraca_squad(self):
         url = f"{WERACA_URL}/time?rank={self.weraca_squad_rank}"
         response = requests.get(url)
-        if response.status_code != 200:
-            print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
-            return False
+        while (True):
+            if response.status_code != 200:
+                print("Server đang ngủ, tiếp tục thử lại sau 5s...")
+                sleep(5)
+                response = requests.get(url)
+            else:
+                break
         data = response.json()
         timeStart = data.get("timeStart")
         if timeStart == "":
@@ -401,7 +405,7 @@ class MetamonPlayer:
         while True:
             ts = int(time.time())
             if timeStart>ts:        
-                print(f'Sẽ join squad dev vào lúc {date_time_start}. Còn {timeStart-ts} giây nữa mới đến giờ join !')
+                print(f'Sẽ vào squad Weraca lúc {date_time_start}. Còn {timeStart-ts} giây nữa mới đến giờ join !')
                 sleep(1)
             else:
                 self.join_weraca_squad()
@@ -411,7 +415,7 @@ class MetamonPlayer:
         response = requests.get(url)
         if response.status_code != 200:
             print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
-            return False
+            return True
         data = response.json()
         print(data)
         teamId = data.get("squadId")
@@ -427,11 +431,11 @@ class MetamonPlayer:
         response = requests.post(url, json = payload)
         if response.status_code != 200:
             print("Server đang ngủ, thử lại khi có thông báo bạn nhé !")
-            return False
+            return True
         data = response.json()
         if data.get("code") == "FAIL":
-            print("Ko có metamons trong danh sách đăng kí với Weraca!")
-            return False
+            print("Ko có metamons trong danh sách đăng kí với Weraca! Vui lòng tắt 2FA và thử lại")
+            return True
         teamId = data.get("squadId")
         invitationCode = data.get("invitationCode")
         teamName = data.get("squadName")
